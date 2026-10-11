@@ -1,20 +1,5 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import ConnectionStatusScreen from "./src/screens/ConnectionStatusScreen";
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>FUNCIONANDO TELEMATICOS!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+  return <ConnectionStatusScreen />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
