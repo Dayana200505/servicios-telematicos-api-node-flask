@@ -14,8 +14,8 @@ export const SERVER_HOST = "192.168.100.5"; // cambiar ip
 // Descomenta el que quieras usar:
 
 
-// export const SERVER_PORT = 3001; Node.js 
-export const SERVER_PORT = 5000; // Flask
+export const SERVER_PORT = 3001; //Node.js 
+//export const SERVER_PORT = 5000; // Flask
 
 export const SERVER_URL = `http://${SERVER_HOST}:${SERVER_PORT}`;
 
