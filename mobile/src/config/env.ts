@@ -3,7 +3,19 @@
  * Cambia SERVER_HOST por la IP de tu PC cuando cambies de red.
  */
 export const SERVER_HOST = "192.168.100.5"; // cambiar ip 
-export const SERVER_PORT = 3001;
+
+
+// Puerto del servidor
+// ============================================================
+// Este proyecto tiene dos stacks de servidor:
+//   - Node.js (Express + Socket.IO)  → puerto 3001
+//   - Python Flask (Flask-SocketIO)  → puerto 5000
+//
+// Descomenta el que quieras usar:
+
+
+// export const SERVER_PORT = 3001; Node.js 
+export const SERVER_PORT = 5000; // Flask
 
 export const SERVER_URL = `http://${SERVER_HOST}:${SERVER_PORT}`;
 
