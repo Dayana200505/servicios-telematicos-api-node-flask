@@ -94,3 +94,73 @@ flowchart TD
 ```
 
 El diagrama representa la arquitectura prevista. La conexión móvil-servidor, la distribución en tiempo real y la lógica de alertas deben implementarse antes de que el flujo funcione de extremo a extremo.
+
+
+## Cómo levantar el proyecto
+
+Requisitos: Python 3.10 a 3.13, Node.js y Git. Para la app móvil, Expo Go en el celular.
+
+Primero clonar el repositorio:
+
+```
+git clone https://github.com/Dayana200505/servicios-telematicos-api-node-flask.git
+cd servicios-telematicos-api-node-flask
+```
+
+### Backend Flask (puerto 5000)
+
+Primera vez:
+
+```
+cd flask-server
+python -m venv venv
+venv\Scripts\activate
+pip install flask flask-socketio eventlet
+python app.py
+```
+
+Siguientes veces:
+
+```
+cd flask-server
+venv\Scripts\activate
+python app.py
+```
+### Backend Node.js (puerto 3001)
+
+```
+cd node-server
+npm install
+npm start
+```
+
+### App móvil (Expo Go)
+
+1. En `mobile/src/config/env.ts`, poner la IP de la computadora en `SERVER_HOST`.
+2. En el mismo archivo, dejar activo solo el puerto del servidor que se va a usar: 3001 (Node.js) o 5000 (Flask).
+3. Con el backend corriendo, en otra terminal:
+
+```
+cd mobile
+npm install
+npx expo start
+```
+
+4. Escanear el QR con Expo Go. El celular y la computadora deben estar en la misma red WiFi.
+
+### Probar la conexión sin celular
+
+Con un backend corriendo, en otra terminal:
+
+```
+cd flask-server
+venv\Scripts\activate
+python test_client.py        # servidor Flask (puerto 5000)
+python test_client_node.py   # servidor Node.js (puerto 3001)
+```
+
+### Notas
+
+- Se levanta un solo backend a la vez con la app móvil.
+- No subir al repositorio los cambios locales de `env.ts` (IP personal).
+
