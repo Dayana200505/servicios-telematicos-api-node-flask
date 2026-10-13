@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,7 +10,8 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { useSocket } from "../hooks/useSocket";
-import { SERVER_URL } from "../config/env";
+import { useZoneSelection } from "../hooks/useZoneSelection";
+import { SERVER_URL, EVENTS } from "../config/env";
 
 const COLORS = {
   primary: "#1e40af",
@@ -58,8 +59,11 @@ function AlertBell({ connected }: AlertBellProps) {
 }
 
 export default function ConnectionStatusScreen() {
-  const { isConnected, socketId, reconnect } = useSocket();
-  const [showDetails, setShowDetails] = useState<boolean>(true);
+  const { isConnected, socket, reconnect } = useSocket();
+  const { selectedZone, setSelectedZone, zones } = useZoneSelection();
+  const [showDetails, setShowDetails] = useState(false);
+  // Emit subscription when connected; handled inside hook via useEffect
+
 
   return (
     <View style={styles.container}>
@@ -74,7 +78,23 @@ export default function ConnectionStatusScreen() {
         <Text style={styles.headerSubtitle}>Emergencias en tiempo real</Text>
       </View>
 
-      {/* ===== TARJETA DE ESTADO ===== */}
+      {/* ===== ZONE SELECTOR ===== */}
+      <View style={styles.zoneContainer}>
+        <Text style={styles.zoneLabel}>Selecciona tu zona</Text>
+        <View style={styles.zoneButtons}>
+          {zones.map((z) => (
+            <TouchableOpacity
+              key={z}
+              style={[styles.zoneButton, selectedZone === z && styles.zoneButtonActive]}
+              onPress={() => setSelectedZone(z)}
+            >
+              <Text style={styles.zoneButtonText}>{z.charAt(0).toUpperCase() + z.slice(1)}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* ===== CARD DE ESTADO ===== */}
       <View style={styles.card}>
         <View
           style={[
@@ -138,7 +158,7 @@ export default function ConnectionStatusScreen() {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>ID DE SESIÓN</Text>
             <Text style={styles.detailValue} selectable>
-              {socketId ?? "—"}
+              {socket?.id ?? "—"}
             </Text>
           </View>
           <View style={[styles.detailRow, styles.detailRowLast]}>
@@ -344,17 +364,52 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
 
-  // ===== FOOTER =====
-  footer: {
-    marginTop: "auto",
+  zoneContainer: {
+    backgroundColor: COLORS.grayLight,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
     alignItems: "center",
-    paddingTop: 20,
-    paddingBottom: 4,
   },
-  footerText: {
-    fontSize: 11,
-    color: COLORS.grayLabel,
-    lineHeight: 16,
-    textAlign: "center",
+  zoneLabel: {
+    fontSize: 15,
+    color: COLORS.text,
+    marginBottom: 8,
+    fontWeight: "600",
   },
+  zoneButtons: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  zoneButton: {
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  zoneButtonActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  
+zoneButtonText: {
+  color: COLORS.text,
+  fontWeight: "500",
+},
+
+footer: {
+  alignItems: "center",
+  marginTop: 20,
+},
+
+footerText: {
+  fontSize: 12,
+  color: COLORS.gray,
+  textAlign: "center",
+  marginTop: 4,
+},
 });
+
+ 
