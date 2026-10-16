@@ -1,22 +1,24 @@
+
 /**
  * Configuración de entorno para la app móvil.
- * Cambia SERVER_HOST por la IP de tu PC cuando cambies de red.
  */
-export const SERVER_HOST = "192.168.100.5"; // cambiar ip 
+
+// IP de tu PC en la red local (obtenla con: ipconfig)
+export const SERVER_HOST = "192.168.100.5";
+
+// Puertos de los dos stacks
+export const NODE_PORT = 3001;   // Node.js (Express + Socket.IO)
+export const FLASK_PORT = 5000;  // Python Flask (Flask-SocketIO)
 
 
-// Puerto del servidor
-// ============================================================
-// Este proyecto tiene dos stacks de servidor:
-//   - Node.js (Express + Socket.IO)  → puerto 3001
-//   - Python Flask (Flask-SocketIO)  → puerto 5000
-//
-// Descomenta el que quieras usar:
+
+// 👇 Descomenta el que quieras usar:
 
 
-export const SERVER_PORT = 3001; //Node.js 
-//export const SERVER_PORT = 5000; // Flask
+ export const SERVER_PORT = NODE_PORT;  // Node.js
+//export const SERVER_PORT = FLASK_PORT;    // Flask
 
+// URL completa del servidor
 export const SERVER_URL = `http://${SERVER_HOST}:${SERVER_PORT}`;
 
 // Nombres de eventos Socket.IO (según documento del proyecto)
@@ -24,8 +26,12 @@ export const EVENTS = {
   CONNECT: "connect",
   DISCONNECT: "disconnect",
   CONNECT_ERROR: "connect_error",
-  // Estos se usarán en tareas futuras (IDs 4 y 5)
+  // Selección de zona
   SUBSCRIBE_ZONE: "suscribir_zona",
+  ZONE_CONFIRMED: "zona_confirmada",
+  ZONE_ERROR: "error_zona",
+  // Alertas
   EMIT_ALERT: "emitir_alerta",
   ALERT_RECEIVED: "alerta_recibida",
+  ALERT_ERROR: "error_alerta",
 } as const;

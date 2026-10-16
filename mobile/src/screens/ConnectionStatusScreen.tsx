@@ -11,42 +11,27 @@ import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { useSocket } from "../hooks/useSocket";
 import { SERVER_URL } from "../config/env";
+import { COLORS, RADIUS, SPACING } from "../config/theme";
 
-const COLORS = {
-  primary: "#1e40af",
-  primaryDark: "#1e3a8a",
-  success: "#16a34a",
-  successBg: "#dcfce7",
-  danger: "#dc2626",
-  dangerBg: "#fee2e2",
-  gray: "#6b7280",
-  grayLabel: "#9ca3af",
-  grayLight: "#f9fafb",
-  border: "#e5e7eb",
-  white: "#ffffff",
-  text: "#111827",
+type Props = {
+  onManageZones: () => void;
 };
 
-// ===== CAMPANA (estática) =====
-type AlertBellProps = {
-  connected: boolean;
-};
-
-function AlertBell({ connected }: AlertBellProps) {
+function AlertBell({ connected }: { connected: boolean }) {
   return (
     <View
       style={[styles.headerIconContainer, !connected && styles.headerIconOff]}
       accessible
       accessibilityRole="image"
-      accessibilityLabel={connected ? "Alertas activas" : "Alertas desactivadas"}
+      accessibilityLabel={
+        connected ? "Alertas activas" : "Alertas desactivadas"
+      }
     >
       <Ionicons
         name={connected ? "notifications" : "notifications-off"}
         size={36}
         color={COLORS.white}
       />
-
-      {/* Indicador de estado en la esquina */}
       <View
         style={[
           styles.bellBadge,
@@ -57,24 +42,22 @@ function AlertBell({ connected }: AlertBellProps) {
   );
 }
 
-export default function ConnectionStatusScreen() {
-  const { isConnected, socketId, reconnect } = useSocket();
+export default function ConnectionStatusScreen({ onManageZones }: Props) {
+  const { isConnected, socketId, reconnect, currentZone } = useSocket();
   const [showDetails, setShowDetails] = useState<boolean>(true);
 
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
 
-      {/* ===== HEADER ===== */}
+      {/* HEADER */}
       <View style={styles.header}>
         <AlertBell connected={isConnected} />
-        <Text style={styles.headerTitle} accessibilityRole="header">
-          Alertas Comunitarias
-        </Text>
+        <Text style={styles.headerTitle}>Alertas Comunitarias</Text>
         <Text style={styles.headerSubtitle}>Emergencias en tiempo real</Text>
       </View>
 
-      {/* ===== TARJETA DE ESTADO ===== */}
+      {/* TARJETA DE ESTADO */}
       <View style={styles.card}>
         <View
           style={[
@@ -93,7 +76,6 @@ export default function ConnectionStatusScreen() {
               styles.statusText,
               isConnected ? styles.textConnected : styles.textDisconnected,
             ]}
-            accessibilityLiveRegion="polite"
           >
             {isConnected ? "Conectado" : "Desconectado"}
           </Text>
@@ -114,13 +96,11 @@ export default function ConnectionStatusScreen() {
         )}
       </View>
 
-      {/* ===== DETALLES TÉCNICOS ===== */}
+      {/* DETALLES */}
       <TouchableOpacity
         style={styles.detailsToggle}
         onPress={() => setShowDetails((v) => !v)}
         activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityState={{ expanded: showDetails }}
       >
         <Text style={styles.detailsToggleText}>
           {showDetails ? "▾ Ocultar detalles" : "▸ Ver detalles de conexión"}
@@ -141,6 +121,12 @@ export default function ConnectionStatusScreen() {
               {socketId ?? "—"}
             </Text>
           </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>ZONA ACTUAL</Text>
+            <Text style={styles.detailValue} selectable>
+              {currentZone ? currentZone.toUpperCase() : "Sin asignar"}
+            </Text>
+          </View>
           <View style={[styles.detailRow, styles.detailRowLast]}>
             <Text style={styles.detailLabel}>PROTOCOLO</Text>
             <Text style={styles.detailValue}>WebSocket (RFC 6455)</Text>
@@ -148,12 +134,23 @@ export default function ConnectionStatusScreen() {
         </View>
       )}
 
-      {/* ===== BOTÓN RECONECTAR ===== */}
+      {/* BOTÓN PRINCIPAL */}
+      <TouchableOpacity
+        style={styles.zoneButton}
+        onPress={onManageZones}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="location-outline" size={20} color={COLORS.white} />
+        <Text style={styles.zoneButtonText}>
+          {currentZone ? `Cambiar zona (${currentZone})` : "Seleccionar zona"}
+        </Text>
+      </TouchableOpacity>
+
+      {/* BOTÓN SECUNDARIO */}
       <TouchableOpacity
         style={[styles.button, isConnected && styles.buttonSecondary]}
         onPress={reconnect}
         activeOpacity={0.7}
-        accessibilityRole="button"
       >
         <Text
           style={[
@@ -165,7 +162,7 @@ export default function ConnectionStatusScreen() {
         </Text>
       </TouchableOpacity>
 
-      {/* ===== FOOTER ===== */}
+      {/* FOOTER */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>UMSS · Ingeniería Informática</Text>
         <Text style={styles.footerText}>Servicios Telemáticos · Grupo 5</Text>
@@ -178,15 +175,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.white,
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.xl,
     paddingTop: Platform.OS === "android" ? 50 : 60,
     paddingBottom: Platform.OS === "android" ? 60 : 40,
   },
-
-  // ===== HEADER =====
   header: {
     alignItems: "center",
-    marginBottom: 28,
+    marginBottom: SPACING.xxl,
   },
   headerIconContainer: {
     width: 76,
@@ -195,7 +190,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: SPACING.lg,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -203,7 +198,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   headerIconOff: {
-    backgroundColor: COLORS.grayLabel,
+    backgroundColor: COLORS.grayLight,
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -228,52 +223,35 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     marginTop: 4,
   },
-
-  // ===== CARD ESTADO =====
   card: {
-    backgroundColor: COLORS.grayLight,
-    borderRadius: 16,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
+    backgroundColor: COLORS.grayBg,
+    borderRadius: RADIUS.lg,
+    paddingVertical: SPACING.xl,
+    paddingHorizontal: SPACING.xl,
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: SPACING.md,
   },
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 18,
     paddingVertical: 8,
-    borderRadius: 30,
+    borderRadius: RADIUS.round,
     marginBottom: 14,
   },
-  badgeConnected: {
-    backgroundColor: COLORS.successBg,
-  },
-  badgeDisconnected: {
-    backgroundColor: COLORS.dangerBg,
-  },
+  badgeConnected: { backgroundColor: COLORS.successLight },
+  badgeDisconnected: { backgroundColor: COLORS.dangerLight },
   statusDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     marginRight: 8,
   },
-  dotConnected: {
-    backgroundColor: COLORS.success,
-  },
-  dotDisconnected: {
-    backgroundColor: COLORS.danger,
-  },
-  statusText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  textConnected: {
-    color: COLORS.success,
-  },
-  textDisconnected: {
-    color: COLORS.danger,
-  },
+  dotConnected: { backgroundColor: COLORS.success },
+  dotDisconnected: { backgroundColor: COLORS.danger },
+  statusText: { fontSize: 15, fontWeight: "600" },
+  textConnected: { color: COLORS.success },
+  textDisconnected: { color: COLORS.danger },
   statusDescription: {
     fontSize: 13,
     color: COLORS.gray,
@@ -281,11 +259,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     paddingHorizontal: 10,
   },
-  spinner: {
-    marginTop: 12,
-  },
-
-  // ===== DETALLES =====
+  spinner: { marginTop: 12 },
   detailsToggle: {
     paddingVertical: 12,
     alignItems: "center",
@@ -296,21 +270,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   detailsBox: {
-    backgroundColor: COLORS.grayLight,
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    backgroundColor: COLORS.grayBg,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: 14,
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
-  detailRow: {
-    marginBottom: 14,
-  },
-  detailRowLast: {
-    marginBottom: 0,
-  },
+  detailRow: { marginBottom: 14 },
+  detailRowLast: { marginBottom: 0 },
   detailLabel: {
     fontSize: 10,
-    color: COLORS.grayLabel,
+    color: COLORS.grayLight,
     letterSpacing: 0.8,
     marginBottom: 4,
     fontWeight: "600",
@@ -320,14 +290,29 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
-
-  // ===== BOTÓN =====
+  zoneButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 15,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.primary,
+    marginTop: 4,
+    gap: 8,
+  },
+  zoneButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: COLORS.white,
+    marginLeft: 8,
+    letterSpacing: 0.2,
+  },
   button: {
     backgroundColor: COLORS.primary,
     paddingVertical: 15,
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 10,
   },
   buttonSecondary: {
     backgroundColor: COLORS.white,
@@ -340,20 +325,16 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.2,
   },
-  buttonTextSecondary: {
-    color: COLORS.primary,
-  },
-
-  // ===== FOOTER =====
+  buttonTextSecondary: { color: COLORS.primary },
   footer: {
     marginTop: "auto",
     alignItems: "center",
-    paddingTop: 20,
+    paddingTop: SPACING.lg,
     paddingBottom: 4,
   },
   footerText: {
     fontSize: 11,
-    color: COLORS.grayLabel,
+    color: COLORS.grayLight,
     lineHeight: 16,
     textAlign: "center",
   },
