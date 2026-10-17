@@ -20,9 +20,8 @@ EVT_ALERT_ERROR = "error_alerta"
 # Zonas logicas permitidas (cada una es una room).
 ZONAS_VALIDAS = ["norte", "centro", "sur"]
 
-GRAVEDADES_VALIDAS = ["bajo", "medio", "alto"]
-# Alias para no romper emisores que envian "baja", "media" o "alta".
-ALIAS_GRAVEDAD = {"baja": "bajo", "media": "medio", "alta": "alto"}
+GRAVEDADES_VALIDAS = ["baja", "media", "alta"]
+ALIAS_GRAVEDAD = {"bajo": "baja", "medio": "media", "alto": "alta"}
 CAMPOS_OBLIGATORIOS = ["tipo", "gravedad", "zona", "mensaje"]
 MAX_MENSAJE = 200
 
@@ -118,7 +117,7 @@ def handle_emitir_alerta(data):
 
     if error:
         print(f"Alerta rechazada: {error}")
-        emit(EVT_ALERT_ERROR, {"mensaje": error})  # respuesta al emisor
+        emit(EVT_ALERT_ERROR, {"mensaje": error}) 
         return {"ok": False, "error": error}
 
     alerta["emitida_en"] = int(time.time() * 1000)
