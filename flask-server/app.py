@@ -20,6 +20,11 @@ EVT_ALERT_ERROR = "error_alerta"
 # Zonas logicas permitidas (cada una es una room).
 ZONAS_VALIDAS = ["norte", "centro", "sur"]
 
+GRAVEDADES_VALIDAS = ["baja", "media", "alta"]
+ALIAS_GRAVEDAD = {"bajo": "baja", "medio": "media", "alto": "alta"}
+CAMPOS_OBLIGATORIOS = ["tipo", "gravedad", "zona", "mensaje"]
+MAX_MENSAJE = 200
+
 # sid -> zona actual del cliente.
 zona_por_cliente = {}
 
@@ -70,26 +75,57 @@ def handle_suscribir_zona(data):
     asignar_zona(data)
 
 
-# Alerta: solo llega a la room de la zona destino.
-@socketio.on(EVT_EMIT_ALERT)
-def handle_emitir_alerta(data):
-    data = data or {}
-    zona = normalizar_zona(data)
-    tipo, gravedad, mensaje = data.get("tipo"), data.get("gravedad"), data.get("mensaje")
 
-    if zona not in ZONAS_VALIDAS or not tipo or not gravedad or not mensaje:
-        emit(EVT_ALERT_ERROR, {"mensaje": "Alerta incompleta o zona invalida"})
-        return
+def limpiar(valor):
+    return str(valor).strip() if valor is not None else ""
 
-    alerta = {
-        "tipo": tipo,
+
+# Devuelve (alerta_limpia, None) si es valida, o (None, motivo) si no.
+def validar_alerta(data):
+    if not isinstance(data, dict):
+        return None, "La alerta debe enviarse con tipo, gravedad, zona y mensaje"
+
+    faltantes = [c for c in CAMPOS_OBLIGATORIOS if not limpiar(data.get(c))]
+    if faltantes:
+        return None, f"Faltan campos obligatorios: {', '.join(faltantes)}"
+
+    zona = limpiar(data["zona"]).lower()
+    if zona not in ZONAS_VALIDAS:
+        return None, f"Zona invalida. Opciones: {', '.join(ZONAS_VALIDAS)}"
+
+    gravedad = limpiar(data["gravedad"]).lower()
+    gravedad = ALIAS_GRAVEDAD.get(gravedad, gravedad)
+    if gravedad not in GRAVEDADES_VALIDAS:
+        return None, f"Gravedad invalida. Opciones: {', '.join(GRAVEDADES_VALIDAS)}"
+
+    mensaje = limpiar(data["mensaje"])
+    if len(mensaje) > MAX_MENSAJE:
+        return None, f"El mensaje supera {MAX_MENSAJE} caracteres"
+
+    return {
+        "tipo": limpiar(data["tipo"]).lower(),
         "gravedad": gravedad,
         "zona": zona,
         "mensaje": mensaje,
-        "emitida_en": int(time.time() * 1000),
-    }
-    socketio.emit(EVT_ALERT_RECEIVED, alerta, to=zona)
-    print(f"Alerta {tipo}/{gravedad} -> {zona}")
+    }, None
+
+
+# Alerta: solo llega a la room de la zona destino.
+@socketio.on(EVT_EMIT_ALERT)
+def handle_emitir_alerta(data):
+    alerta, error = validar_alerta(data)
+
+    if error:
+        print(f"Alerta rechazada: {error}")
+        emit(EVT_ALERT_ERROR, {"mensaje": error}) 
+        return {"ok": False, "error": error}
+
+    alerta["emitida_en"] = int(time.time() * 1000)
+
+    # TODO (Sarahi): aqui se registra la alerta en SQLite/log.
+    socketio.emit(EVT_ALERT_RECEIVED, alerta, to=alerta["zona"])
+    print(f"Alerta {alerta['tipo']}/{alerta['gravedad']} -> {alerta['zona']}")
+    return {"ok": True}
 
 
 @socketio.on("disconnect")
