@@ -1,4 +1,3 @@
-# test_zona.py
 # Cliente de prueba que se conecta al servidor Flask‑SocketIO y envía una zona.
 # Sirve para validar que el listener suscribir_zona funciona antes de lanzar la app móvil.
 
@@ -17,12 +16,12 @@ def connect():
 
 @sio.event
 def zona_confirmada(data):
-    print("✅ Zona confirmada por el servidor:", data)
+    print("Zona confirmada por el servidor:", data)
     sio.disconnect()
 
 @sio.event
 def error_zona(data):
-    print("⚠️ Error de zona recibido:", data)
+    print("Error de zona recibido:", data)
 
 @sio.event
 def disconnect(*args):
@@ -33,4 +32,4 @@ if __name__ == "__main__":
         sio.connect(SERVER_URL)
         sio.wait()
     except Exception as e:
-        print("❌ No se pudo conectar:", e)
+        print("No se pudo conectar:", e)
