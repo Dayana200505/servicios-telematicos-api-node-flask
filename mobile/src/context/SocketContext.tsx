@@ -48,13 +48,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     const onConnect = () => setSocketId(socket.id ?? null);
 
     const onZoneConfirmed = (data: { zona: Zone }) => {
-      console.log("[Context] ✅ Zona confirmada:", data.zona);
+      console.log("[Context] Zona confirmada:", data.zona);
       setCurrentZone(data.zona);
       setZoneError(null);
     };
 
     const onZoneError = (data: { mensaje: string }) => {
-      console.warn("[Context] ❌ Error de zona:", data.mensaje);
+      console.warn("[Context] Error de zona:", data.mensaje);
       setZoneError(data.mensaje);
     };
 
