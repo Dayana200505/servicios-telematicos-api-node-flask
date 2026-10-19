@@ -153,6 +153,29 @@ Para comprobar los registros guardados:
 python -c "import sqlite3; c=sqlite3.connect('alertas.db'); print(*c.execute('SELECT id,tipo,gravedad,zona,mensaje,fecha_hora FROM alertas ORDER BY id'), sep='\\n')"
 ```
 
+### Cliente de prueba funcional
+
+El script [cliente_prueba.py](flask-server/cliente_prueba.py) conecta al
+servidor, selecciona una zona y muestra en tiempo real las alertas recibidas.
+Funciona con cualquiera de los dos backends:
+
+```powershell
+cd flask-server
+python cliente_prueba.py http://localhost:5000 norte --duracion 60
+python cliente_prueba.py http://localhost:3001 sur --duracion 60
+```
+
+Con el cliente ejecutándose, enviar una alerta desde otra terminal:
+
+```powershell
+python enviar_alerta.py http://localhost:5000 norte
+```
+
+El cliente imprime tipo, gravedad, zona, mensaje y fecha/hora. Para comprobar
+que la segmentación funciona, ejecutar varios clientes con zonas diferentes y
+enviar alertas usando `enviar_alerta.py`; cada cliente debe mostrar únicamente
+las alertas de su zona.
+
 ### Backend Node.js (puerto 3001)
 
 ```
@@ -160,6 +183,23 @@ cd node-server
 npm install
 npm start
 ```
+
+Cliente receptor de prueba para Node.js:
+
+```powershell
+node cliente_prueba.js http://localhost:3001 norte 60000
+```
+
+En otra terminal, el emisor puede enviar todas las alertas de prueba o solo
+las de una zona:
+
+```powershell
+node emisor.js http://localhost:3001
+node emisor.js http://localhost:3001 norte
+```
+
+El cliente receptor muestra únicamente las alertas que llegan a la room
+seleccionada, incluyendo tipo, gravedad, zona, mensaje y fecha/hora.
 
 ### App móvil (Expo Go)
 

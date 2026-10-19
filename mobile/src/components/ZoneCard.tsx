@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -34,7 +34,7 @@ type Props = {
 };
 
 export default function ZoneCard({ zone, selected, onPress, disabled }: Props) {
-  const scale = useRef(new Animated.Value(1)).current;
+  const [scale] = useState(() => new Animated.Value(1));
   const IconComponent = ZONE_ICONS[zone.id] ?? MapPin;
 
   const handlePressIn = () => {

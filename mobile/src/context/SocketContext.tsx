@@ -8,12 +8,14 @@ import React, {
 import { socketService } from "../services/socket";
 import { EVENTS } from "../config/env";
 import type { Zone } from "../types/zones";
+import type { AlertMessage } from "../types/alerts";
 
 interface SocketContextValue {
   isConnected: boolean;
   socketId: string | null;
   currentZone: Zone | null;
   zoneError: string | null;
+  alerts: AlertMessage[];
   reconnect: () => void;
   subscribeToZone: (zone: Zone) => boolean;
 }
@@ -29,6 +31,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   );
   const [currentZone, setCurrentZone] = useState<Zone | null>(null);
   const [zoneError, setZoneError] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<AlertMessage[]>([]);
 
   useEffect(() => {
     const socket = socketService.connect();
@@ -55,15 +58,35 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setZoneError(data.mensaje);
     };
 
+    const onAlertReceived = (data: AlertMessage) => {
+      if (
+        !data ||
+        typeof data.tipo !== "string" ||
+        typeof data.gravedad !== "string" ||
+        typeof data.zona !== "string" ||
+        typeof data.mensaje !== "string"
+      ) {
+        console.warn("[Context] Alerta recibida con formato invalido", data);
+        return;
+      }
+
+      setAlerts((current) => [
+        { ...data, emitida_en: data.emitida_en ?? Date.now() },
+        ...current,
+      ].slice(0, 50));
+    };
+
     socket.on("connect", onConnect);
     socket.on(EVENTS.ZONE_CONFIRMED, onZoneConfirmed);
     socket.on(EVENTS.ZONE_ERROR, onZoneError);
+    socket.on(EVENTS.ALERT_RECEIVED, onAlertReceived);
 
     return () => {
       unsubscribe();
       socket.off("connect", onConnect);
       socket.off(EVENTS.ZONE_CONFIRMED, onZoneConfirmed);
       socket.off(EVENTS.ZONE_ERROR, onZoneError);
+      socket.off(EVENTS.ALERT_RECEIVED, onAlertReceived);
     };
   }, []);
 
@@ -85,6 +108,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         socketId,
         currentZone,
         zoneError,
+        alerts,
         reconnect,
         subscribeToZone,
       }}

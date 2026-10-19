@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -30,7 +30,7 @@ type Props = {
 
 export default function ZoneSelectionScreen({ onBack }: Props) {
   const { currentZone, isConnected, subscribeToZone, zoneError } = useSocket();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.timing(fadeAnim, {

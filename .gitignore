@@ -28,6 +28,7 @@ __pycache__/
 # Logs and local OS/editor files
 npm-debug.log*
 yarn-debug.log*
+flask-server/alertas.db
 *.log
 .DS_Store
 Thumbs.db
