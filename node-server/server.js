@@ -13,7 +13,7 @@ const io = new Server(httpServer, {
 
 const PORT = 3001;
 
-// Nombres de eventos 
+// Nombres de eventos (deben coincidir con EVENTS en mobile/src/config/env.ts).
 const EVT = {
   SUBSCRIBE_ZONE: "suscribir_zona",
   EMIT_ALERT: "emitir_alerta",
@@ -26,10 +26,19 @@ const EVT = {
 // Zonas logicas permitidas (cada una es una room).
 const ZONAS_VALIDAS = ["norte", "centro", "sur"];
 
+const GRAVEDADES_VALIDAS = ["baja", "media", "alta"];
+const ALIAS_GRAVEDAD = new Map([
+  ["bajo", "baja"],
+  ["medio", "media"],
+  ["alto", "alta"],
+]);
+const CAMPOS_OBLIGATORIOS = ["tipo", "gravedad", "zona", "mensaje"];
+const MAX_MENSAJE = 200;
+
 // socket.id -> zona actual del cliente.
 const zonaPorCliente = new Map();
 
-
+// Ruta HTTP para comprobar que el servidor funciona.
 app.get("/", (req, res) => {
   res.json({
     message: "Servidor base de alertas funcionando",
@@ -43,7 +52,7 @@ function normalizarZona(data) {
   return String(valor || "").trim().toLowerCase();
 }
 
-// Incorpora al cliente a la room de su zona.
+// Incorpora al cliente a la room de su zona (y lo saca de la anterior).
 function asignarZona(socket, data) {
   const nueva = normalizarZona(data);
 
@@ -65,6 +74,66 @@ function asignarZona(socket, data) {
   console.log(`Cliente ${socket.id} -> room ${nueva}`);
 }
 
+function limpiar(valor) {
+  return valor !== undefined && valor !== null ? String(valor).trim() : "";
+}
+
+// Devuelve { alerta } si es valida, o { error } si no.
+function validarAlerta(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return { error: "La alerta debe enviarse con tipo, gravedad, zona y mensaje" };
+  }
+
+  const faltantes = CAMPOS_OBLIGATORIOS.filter((c) => !limpiar(data[c]));
+  if (faltantes.length > 0) {
+    return { error: `Faltan campos obligatorios: ${faltantes.join(", ")}` };
+  }
+
+  const zona = limpiar(data.zona).toLowerCase();
+  if (!ZONAS_VALIDAS.includes(zona)) {
+    return { error: `Zona invalida. Opciones: ${ZONAS_VALIDAS.join(", ")}` };
+  }
+
+  let gravedad = limpiar(data.gravedad).toLowerCase();
+  gravedad = ALIAS_GRAVEDAD.get(gravedad) || gravedad;
+  if (!GRAVEDADES_VALIDAS.includes(gravedad)) {
+    return { error: `Gravedad invalida. Opciones: ${GRAVEDADES_VALIDAS.join(", ")}` };
+  }
+
+  const mensaje = limpiar(data.mensaje);
+  if (mensaje.length > MAX_MENSAJE) {
+    return { error: `El mensaje supera ${MAX_MENSAJE} caracteres` };
+  }
+
+  return {
+    alerta: {
+      tipo: limpiar(data.tipo).toLowerCase(),
+      gravedad,
+      zona,
+      mensaje,
+    },
+  };
+}
+
+// Cantidad de clientes suscritos a una zona.
+function contarClientes(zona) {
+  let total = 0;
+  for (const z of zonaPorCliente.values()) {
+    if (z === zona) total++;
+  }
+  return total;
+}
+
+// Difusion segmentada (pub/sub): publica la alerta solo en la room de la zona destino.
+function difundirAlerta(alerta) {
+  const destinatarios = contarClientes(alerta.zona);
+  io.to(alerta.zona).emit(EVT.ALERT_RECEIVED, alerta);
+  console.log(
+    `Alerta ${alerta.tipo}/${alerta.gravedad} -> ${alerta.zona} (${destinatarios} clientes)`
+  );
+  return destinatarios;
+}
+
 // Conexión de clientes mediante Socket.IO.
 io.on("connection", (socket) => {
   console.log(`Cliente conectado: ${socket.id}`);
@@ -80,21 +149,23 @@ io.on("connection", (socket) => {
   // Elegir o cambiar de zona sin reconectar.
   socket.on(EVT.SUBSCRIBE_ZONE, (data) => asignarZona(socket, data));
 
-  // Alerta: solo llega a la room de la zona destino.
-  socket.on(EVT.EMIT_ALERT, (data) => {
-    const zona = normalizarZona(data);
-    const { tipo, gravedad, mensaje } = data || {};
+  // Alerta: se valida, se registra y solo llega a la room de la zona destino.
+  socket.on(EVT.EMIT_ALERT, (data, ack) => {
+    const responder = typeof ack === "function" ? ack : () => {};
+    const { alerta, error } = validarAlerta(data);
 
-    if (!ZONAS_VALIDAS.includes(zona) || !tipo || !gravedad || !mensaje) {
-      socket.emit(EVT.ALERT_ERROR, {
-        mensaje: "Alerta incompleta o zona invalida",
-      });
+    if (error) {
+      console.log(`Alerta rechazada: ${error}`);
+      socket.emit(EVT.ALERT_ERROR, { mensaje: error });
+      responder({ ok: false, error });
       return;
     }
 
-    const alerta = { tipo, gravedad, zona, mensaje, emitida_en: Date.now() };
-    io.to(zona).emit(EVT.ALERT_RECEIVED, alerta);
-    console.log(`Alerta ${tipo}/${gravedad} -> ${zona}`);
+    alerta.emitida_en = Date.now();
+
+    // TODO (Sarahi): aqui se registra la alerta en SQLite/log.
+    difundirAlerta(alerta);
+    responder({ ok: true });
   });
 
   socket.on("disconnect", () => {
