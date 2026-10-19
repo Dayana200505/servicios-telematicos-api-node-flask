@@ -1,13 +1,10 @@
 
 const { io } = require("socket.io-client");
 
-// SERVIDOR NODE.JS
-const SERVER_URL = "http://localhost:3001";
+const SERVER_URL = process.argv[2] || "http://localhost:3001";
+const ZONA_FILTRO = process.argv[3];
 
-// SERVIDOR FLASK
-//const SERVER_URL = "http://localhost:5000";
-
-const alertas = [
+const alertasBase = [
   {
     tipo: "incendio",
     gravedad: "media",
@@ -27,6 +24,15 @@ const alertas = [
     mensaje: "Temblor de prueba en la zona sur",
   },
 ];
+
+const alertas = ZONA_FILTRO
+  ? alertasBase.filter((alerta) => alerta.zona === ZONA_FILTRO)
+  : alertasBase;
+
+if (ZONA_FILTRO && alertas.length === 0) {
+  console.error(`No hay alertas de prueba para la zona: ${ZONA_FILTRO}`);
+  process.exit(1);
+}
 
 const socket = io(SERVER_URL);
 let indice = 0;
@@ -55,11 +61,16 @@ function enviarSiguienteAlerta() {
   console.log(`\nEnviando alerta ${indice + 1}/${alertas.length}:`);
   console.log(JSON.stringify(alerta, null, 2));
 
-  socket.emit("emitir_alerta", alerta);
-  indice++;
+  socket.emit("emitir_alerta", alerta, (respuesta) => {
+    if (respuesta?.ok) {
+      console.log("Servidor acepto la alerta.");
+    } else {
+      console.error("Servidor rechazo la alerta:", respuesta);
+    }
 
-  // Espera antes de enviar la siguiente alerta.
+    indice++;
   temporizador = setTimeout(enviarSiguienteAlerta, 1000);
+  });
 }
 
 socket.on("connect_error", (error) => {

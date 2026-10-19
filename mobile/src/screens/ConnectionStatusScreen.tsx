@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  ScrollView,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
@@ -43,7 +44,7 @@ function AlertBell({ connected }: { connected: boolean }) {
 }
 
 export default function ConnectionStatusScreen({ onManageZones }: Props) {
-  const { isConnected, socketId, reconnect, currentZone } = useSocket();
+  const { isConnected, socketId, reconnect, currentZone, alerts } = useSocket();
   const [showDetails, setShowDetails] = useState<boolean>(true);
 
   return (
@@ -135,6 +136,46 @@ export default function ConnectionStatusScreen({ onManageZones }: Props) {
       )}
 
       {/* BOTÓN PRINCIPAL */}
+      <View style={styles.alertsHeader}>
+        <View>
+          <Text style={styles.alertsTitle}>Alertas recibidas</Text>
+          <Text style={styles.alertsSubtitle}>
+            Solo se muestran alertas de la zona suscrita
+          </Text>
+        </View>
+        <Text style={styles.alertsCount}>{alerts.length}</Text>
+      </View>
+
+      <ScrollView
+        style={styles.alertsList}
+        contentContainerStyle={alerts.length === 0 ? styles.emptyAlerts : undefined}
+        showsVerticalScrollIndicator={false}
+      >
+        {alerts.length === 0 ? (
+          <Text style={styles.emptyAlertsText}>
+            {currentZone
+              ? "Esperando alertas para tu zona..."
+              : "Selecciona una zona para recibir alertas."}
+          </Text>
+        ) : (
+          alerts.map((alert, index) => (
+            <View key={`${alert.emitida_en}-${index}`} style={styles.alertCard}>
+              <View style={styles.alertCardHeader}>
+                <Text style={styles.alertType}>{alert.tipo.toUpperCase()}</Text>
+                <Text style={styles.alertSeverity}>{alert.gravedad.toUpperCase()}</Text>
+              </View>
+              <Text style={styles.alertZone}>Zona {alert.zona.toUpperCase()}</Text>
+              <Text style={styles.alertMessage}>{alert.mensaje}</Text>
+              <Text style={styles.alertDate}>
+                {alert.fecha_hora
+                  ? new Date(alert.fecha_hora).toLocaleString()
+                  : new Date(alert.emitida_en).toLocaleString()}
+              </Text>
+            </View>
+          ))
+        )}
+      </ScrollView>
+
       <TouchableOpacity
         style={styles.zoneButton}
         onPress={onManageZones}
@@ -289,6 +330,90 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.text,
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+  },
+  alertsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: SPACING.sm,
+  },
+  alertsTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  alertsSubtitle: {
+    fontSize: 11,
+    color: COLORS.gray,
+    marginTop: 3,
+  },
+  alertsCount: {
+    minWidth: 28,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: RADIUS.round,
+    backgroundColor: COLORS.primaryLight,
+    color: COLORS.primary,
+    textAlign: "center",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  alertsList: {
+    maxHeight: 235,
+    marginBottom: SPACING.md,
+  },
+  emptyAlerts: {
+    minHeight: 90,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: COLORS.grayBg,
+    borderRadius: RADIUS.md,
+    padding: SPACING.lg,
+  },
+  emptyAlertsText: {
+    color: COLORS.gray,
+    fontSize: 13,
+    textAlign: "center",
+  },
+  alertCard: {
+    backgroundColor: COLORS.grayBg,
+    borderRadius: RADIUS.md,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.warning,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  alertCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  alertType: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  alertSeverity: {
+    color: COLORS.danger,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  alertZone: {
+    color: COLORS.primary,
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 4,
+  },
+  alertMessage: {
+    color: COLORS.textLight,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 6,
+  },
+  alertDate: {
+    color: COLORS.gray,
+    fontSize: 10,
+    marginTop: 8,
   },
   zoneButton: {
     flexDirection: "row",

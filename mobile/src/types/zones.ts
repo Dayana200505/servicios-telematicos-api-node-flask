@@ -1,11 +1,3 @@
-/**
- * Tipos y constantes de zonas lógicas del sistema.
- * Según el documento del proyecto: norte, centro, sur.
- *
- * IMPORTANTE: las zonas son LÓGICAS, no geográficas.
- * No se usan coordenadas GPS ni mapas digitales.
- */
-
 export type Zone = "norte" | "centro" | "sur";
 
 export interface ZoneInfo {

@@ -55,26 +55,26 @@ class SocketService {
    */
   private registerBaseEvents(socket: Socket) {
     socket.on(EVENTS.CONNECT, () => {
-      log("[Socket] ✅ Conectado. ID:", socket.id);
+      log("[Socket] Conectado. ID:", socket.id);
       this.notify(true);
     });
 
     socket.on(EVENTS.DISCONNECT, (reason) => {
-      log("[Socket] ❌ Desconectado. Razón:", reason);
+      log("[Socket] Desconectado. Razón:", reason);
       this.notify(false);
     });
 
     socket.on(EVENTS.CONNECT_ERROR, (err) => {
-      log("[Socket] ⚠️ Error de conexión:", err.message);
+      log("[Socket] Error de conexión:", err.message);
       this.notify(false);
     });
 
     socket.io.on("reconnect_attempt", (attempt) => {
-      log(`[Socket] 🔄 Intento de reconexión #${attempt}`);
+      log(`[Socket] Intento de reconexión #${attempt}`);
     });
 
     socket.io.on("reconnect", (attempt) => {
-      log(`[Socket] 🎉 Reconectado tras ${attempt} intentos`);
+      log(`[Socket] Reconectado tras ${attempt} intentos`);
     });
   }
 
@@ -177,7 +177,7 @@ class SocketService {
       return false;
     }
     this.socket.emit(EVENTS.SUBSCRIBE_ZONE, { zona: zone });
-    log(`[Socket] 📍 Suscrito a zona: ${zone}`);
+    log(`[Socket] Suscrito a zona: ${zone}`);
     return true;
   }
 

@@ -1,7 +1,3 @@
-/**
- * Paleta de colores centralizada del proyecto.
- * Cambiar aquí afecta a toda la app.
- */
 export const COLORS = {
   // Primarios
   primary: "#1e40af",
@@ -20,7 +16,7 @@ export const COLORS = {
   gray: "#6b7280",
   grayLight: "#9ca3af",
   grayBg: "#f9fafb",
-  grayBgStrong: "#f3f4f6",   // ← agregado
+  grayBgStrong: "#f3f4f6",
 
   // Base
   white: "#ffffff",
