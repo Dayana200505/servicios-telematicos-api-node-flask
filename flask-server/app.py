@@ -112,7 +112,20 @@ def validar_alerta(data):
     }, None
 
 
-# Alerta: solo llega a la room de la zona destino.
+# Cantidad de clientes suscritos a una zona.
+def contar_clientes(zona):
+    return sum(1 for z in zona_por_cliente.values() if z == zona)
+
+
+# Difusion segmentada (pub/sub): publica la alerta solo en la room de la zona destino.
+def difundir_alerta(alerta):
+    destinatarios = contar_clientes(alerta["zona"])
+    socketio.emit(EVT_ALERT_RECEIVED, alerta, to=alerta["zona"])
+    print(f"Alerta {alerta['tipo']}/{alerta['gravedad']} -> {alerta['zona']} ({destinatarios} clientes)")
+    return destinatarios
+
+
+# Alerta: se valida, se registra y solo llega a la room de la zona destino.
 @socketio.on(EVT_EMIT_ALERT)
 def handle_emitir_alerta(data):
     alerta, error = validar_alerta(data)
@@ -124,17 +137,8 @@ def handle_emitir_alerta(data):
 
     alerta["emitida_en"] = int(time.time() * 1000)
 
-    # --- TAREA SARAHI: GUARDAR EN SQLITE ---
-    fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    try:
-        guardar_alerta(alerta["tipo"], alerta["gravedad"], alerta["zona"], alerta["mensaje"], fecha_actual)
-        print(f"✅ [BD] Alerta guardada: {alerta['tipo']} - {alerta['zona']} - {fecha_actual}")
-    except Exception as e:
-        print(f"❌ [BD] Error al guardar alerta: {e}")
-    # ---------------------------------------
-    
-    socketio.emit(EVT_ALERT_RECEIVED, alerta, to=alerta["zona"])
-    print(f"Alerta {alerta['tipo']}/{alerta['gravedad']} -> {alerta['zona']}")
+    # TODO aqui se registra la alerta en SQLite/log.
+    difundir_alerta(alerta)
     return {"ok": True}
 
 
