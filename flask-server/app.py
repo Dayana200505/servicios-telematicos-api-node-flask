@@ -1,7 +1,11 @@
 import eventlet
 eventlet.monkey_patch()
 
+import os
+import sqlite3
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 
 from flask import Flask, request
 from flask_socketio import SocketIO, join_room, leave_room, emit
@@ -25,8 +29,67 @@ ALIAS_GRAVEDAD = {"bajo": "baja", "medio": "media", "alto": "alta"}
 CAMPOS_OBLIGATORIOS = ["tipo", "gravedad", "zona", "mensaje"]
 MAX_MENSAJE = 200
 
+# SQLite queda junto al servidor por defecto. Puede cambiarse con
+# ALERTAS_DB_PATH para usar otra ubicación en desarrollo o producción.
+DATABASE_PATH = Path(
+    os.getenv("ALERTAS_DB_PATH", Path(__file__).with_name("alertas.db"))
+)
+
 # sid -> zona actual del cliente.
 zona_por_cliente = {}
+
+
+def inicializar_base_datos():
+    """Crea la tabla de alertas si todavía no existe."""
+    conn = sqlite3.connect(str(DATABASE_PATH), timeout=10)
+    try:
+        with conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS alertas (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    tipo TEXT NOT NULL,
+                    gravedad TEXT NOT NULL CHECK (gravedad IN ('baja', 'media', 'alta')),
+                    zona TEXT NOT NULL CHECK (zona IN ('norte', 'centro', 'sur')),
+                    mensaje TEXT NOT NULL,
+                    emitida_en INTEGER NOT NULL,
+                    fecha_hora TEXT NOT NULL
+                )
+                """
+            )
+    finally:
+        conn.close()
+
+
+def registrar_alerta(alerta):
+    """Persiste una alerta válida y devuelve su fecha/hora UTC."""
+    fecha_hora = datetime.now(timezone.utc).isoformat()
+    conn = sqlite3.connect(str(DATABASE_PATH), timeout=10)
+    try:
+        with conn:
+            conn.execute(
+                """
+                INSERT INTO alertas
+                    (tipo, gravedad, zona, mensaje, emitida_en, fecha_hora)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    alerta["tipo"],
+                    alerta["gravedad"],
+                    alerta["zona"],
+                    alerta["mensaje"],
+                    alerta["emitida_en"],
+                    fecha_hora,
+                ),
+            )
+    finally:
+        conn.close()
+
+    alerta["fecha_hora"] = fecha_hora
+    return fecha_hora
+
+
+inicializar_base_datos()
 
 
 @app.route("/")
@@ -135,7 +198,14 @@ def handle_emitir_alerta(data):
 
     alerta["emitida_en"] = int(time.time() * 1000)
 
-    # TODO aqui se registra la alerta en SQLite/log.
+    try:
+        registrar_alerta(alerta)
+    except sqlite3.Error as exc:
+        print(f"No se pudo registrar la alerta: {exc}")
+        mensaje = "No se pudo registrar la alerta en SQLite"
+        emit(EVT_ALERT_ERROR, {"mensaje": mensaje})
+        return {"ok": False, "error": mensaje}
+
     difundir_alerta(alerta)
     return {"ok": True}
 

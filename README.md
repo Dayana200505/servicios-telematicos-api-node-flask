@@ -126,6 +126,33 @@ cd flask-server
 venv\Scripts\activate
 python app.py
 ```
+
+### Registro de alertas en SQLite
+
+El servidor Flask crea automáticamente la base de datos `flask-server/alertas.db`
+al iniciar. La tabla `alertas` almacena:
+
+- tipo, gravedad, zona y mensaje;
+- `emitida_en`, como marca de tiempo Unix en milisegundos;
+- `fecha_hora`, como fecha/hora UTC en formato ISO 8601.
+
+Una alerta solo se difunde después de validarse y guardarse correctamente. Si
+SQLite no puede registrar la alerta, el emisor recibe `error_alerta` y la alerta
+no se publica a ninguna room.
+
+Para cambiar la ubicación de la base de datos:
+
+```powershell
+$env:ALERTAS_DB_PATH = "D:\datos\alertas.db"
+python app.py
+```
+
+Para comprobar los registros guardados:
+
+```powershell
+python -c "import sqlite3; c=sqlite3.connect('alertas.db'); print(*c.execute('SELECT id,tipo,gravedad,zona,mensaje,fecha_hora FROM alertas ORDER BY id'), sep='\\n')"
+```
+
 ### Backend Node.js (puerto 3001)
 
 ```
