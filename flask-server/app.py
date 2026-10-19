@@ -1,15 +1,16 @@
 # Eventlet deprecated – removed. Using threading async mode.
 
-# eventlet.monkey_patch() removed – not needed with threading async mode.
-
-
 import time
-
+from datetime import datetime
 from flask import Flask, request
+from db.alertas import init_db, guardar_alerta
 from flask_socketio import SocketIO, join_room, leave_room, emit
+
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+# Inicializamos la base de datos al arrancar
+init_db()
 
 # Nombres de eventos (deben coincidir con EVENTS en mobile/src/config/env.ts).
 EVT_SUBSCRIBE_ZONE = "suscribir_zona"
@@ -77,7 +78,6 @@ def handle_suscribir_zona(data):
     asignar_zona(data)
 
 
-
 def limpiar(valor):
     return str(valor).strip() if valor is not None else ""
 
@@ -124,7 +124,15 @@ def handle_emitir_alerta(data):
 
     alerta["emitida_en"] = int(time.time() * 1000)
 
-    # TODO (Sarahi): aqui se registra la alerta en SQLite/log.
+    # --- TAREA SARAHI: GUARDAR EN SQLITE ---
+    fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        guardar_alerta(alerta["tipo"], alerta["gravedad"], alerta["zona"], alerta["mensaje"], fecha_actual)
+        print(f"✅ [BD] Alerta guardada: {alerta['tipo']} - {alerta['zona']} - {fecha_actual}")
+    except Exception as e:
+        print(f"❌ [BD] Error al guardar alerta: {e}")
+    # ---------------------------------------
+    
     socketio.emit(EVT_ALERT_RECEIVED, alerta, to=alerta["zona"])
     print(f"Alerta {alerta['tipo']}/{alerta['gravedad']} -> {alerta['zona']}")
     return {"ok": True}
@@ -139,3 +147,4 @@ def handle_disconnect():
 if __name__ == "__main__":
     print("Flask‑SocketIO server listening on http://0.0.0.0:5000")
     socketio.run(app, host="0.0.0.0", port=5000)
+    
