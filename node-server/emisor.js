@@ -1,12 +1,8 @@
 
 const { io } = require("socket.io-client");
 
-// SERVIDOR NODE.JS
 const SERVER_URL = process.argv[2] || "http://localhost:3001";
 const ZONA_FILTRO = process.argv[3];
-
-// SERVIDOR FLASK
-//const SERVER_URL = "http://localhost:5000";
 
 const alertasBase = [
   {
@@ -73,8 +69,7 @@ function enviarSiguienteAlerta() {
     }
 
     indice++;
-    // Espera antes de enviar la siguiente alerta.
-    temporizador = setTimeout(enviarSiguienteAlerta, 1000);
+  temporizador = setTimeout(enviarSiguienteAlerta, 1000);
   });
 }
 

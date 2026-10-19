@@ -1,5 +1,7 @@
 const express = require("express");
 const http = require("http");
+const path = require("path");
+const { DatabaseSync } = require("node:sqlite");
 const { Server } = require("socket.io");
 
 const app = express();
@@ -12,8 +14,7 @@ const io = new Server(httpServer, {
 });
 
 const PORT = 3001;
-
-// Nombres de eventos (deben coincidir con EVENTS en mobile/src/config/env.ts).
+// Nombres de eventos 
 const EVT = {
   SUBSCRIBE_ZONE: "suscribir_zona",
   EMIT_ALERT: "emitir_alerta",
@@ -22,8 +23,7 @@ const EVT = {
   ZONE_ERROR: "error_zona",
   ALERT_ERROR: "error_alerta",
 };
-
-// Zonas logicas permitidas (cada una es una room).
+// Zonas logicas permitidas
 const ZONAS_VALIDAS = ["norte", "centro", "sur"];
 
 const GRAVEDADES_VALIDAS = ["baja", "media", "alta"];
@@ -35,10 +35,28 @@ const ALIAS_GRAVEDAD = new Map([
 const CAMPOS_OBLIGATORIOS = ["tipo", "gravedad", "zona", "mensaje"];
 const MAX_MENSAJE = 200;
 
-// socket.id -> zona actual del cliente.
 const zonaPorCliente = new Map();
 
-// Ruta HTTP para comprobar que el servidor funciona.
+const databasePath = process.env.ALERTAS_DB_PATH || path.join(__dirname, "alertas.db");
+const database = new DatabaseSync(databasePath);
+
+database.exec(`
+  CREATE TABLE IF NOT EXISTS alertas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo TEXT NOT NULL,
+    gravedad TEXT NOT NULL CHECK (gravedad IN ('baja', 'media', 'alta')),
+    zona TEXT NOT NULL CHECK (zona IN ('norte', 'centro', 'sur')),
+    mensaje TEXT NOT NULL,
+    emitida_en INTEGER NOT NULL,
+    fecha_hora TEXT NOT NULL
+  )
+`);
+
+const insertarAlerta = database.prepare(`
+  INSERT INTO alertas (tipo, gravedad, zona, mensaje, emitida_en, fecha_hora)
+  VALUES (?, ?, ?, ?, ?, ?)
+`);
+
 app.get("/", (req, res) => {
   res.json({
     message: "Servidor base de alertas funcionando",
@@ -46,13 +64,11 @@ app.get("/", (req, res) => {
   });
 });
 
-// Acepta "norte" o { zona: "norte" }.
 function normalizarZona(data) {
   const valor = typeof data === "string" ? data : data && data.zona;
   return String(valor || "").trim().toLowerCase();
 }
 
-// Incorpora al cliente a la room de su zona (y lo saca de la anterior).
 function asignarZona(socket, data) {
   const nueva = normalizarZona(data);
 
@@ -78,7 +94,6 @@ function limpiar(valor) {
   return valor !== undefined && valor !== null ? String(valor).trim() : "";
 }
 
-// Devuelve { alerta } si es valida, o { error } si no.
 function validarAlerta(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return { error: "La alerta debe enviarse con tipo, gravedad, zona y mensaje" };
@@ -115,7 +130,6 @@ function validarAlerta(data) {
   };
 }
 
-// Cantidad de clientes suscritos a una zona.
 function contarClientes(zona) {
   let total = 0;
   for (const z of zonaPorCliente.values()) {
@@ -124,7 +138,6 @@ function contarClientes(zona) {
   return total;
 }
 
-// Difusion segmentada (pub/sub): publica la alerta solo en la room de la zona destino.
 function difundirAlerta(alerta) {
   const destinatarios = contarClientes(alerta.zona);
   io.to(alerta.zona).emit(EVT.ALERT_RECEIVED, alerta);
@@ -134,11 +147,9 @@ function difundirAlerta(alerta) {
   return destinatarios;
 }
 
-// Conexión de clientes mediante Socket.IO.
 io.on("connection", (socket) => {
   console.log(`Cliente conectado: ${socket.id}`);
 
-  // Zona enviada al conectar (auth o query), si el cliente la manda asi.
   const inicial =
     (socket.handshake.auth && socket.handshake.auth.zona) ||
     (socket.handshake.query && socket.handshake.query.zona);
@@ -146,10 +157,8 @@ io.on("connection", (socket) => {
     asignarZona(socket, inicial);
   }
 
-  // Elegir o cambiar de zona sin reconectar.
   socket.on(EVT.SUBSCRIBE_ZONE, (data) => asignarZona(socket, data));
 
-  // Alerta: se valida, se registra y solo llega a la room de la zona destino.
   socket.on(EVT.EMIT_ALERT, (data, ack) => {
     const responder = typeof ack === "function" ? ack : () => {};
     const { alerta, error } = validarAlerta(data);
@@ -162,8 +171,25 @@ io.on("connection", (socket) => {
     }
 
     alerta.emitida_en = Date.now();
+    alerta.fecha_hora = new Date().toISOString();
 
-    // TODO (Sarahi): aqui se registra la alerta en SQLite/log.
+    try {
+      insertarAlerta.run(
+        alerta.tipo,
+        alerta.gravedad,
+        alerta.zona,
+        alerta.mensaje,
+        alerta.emitida_en,
+        alerta.fecha_hora
+      );
+    } catch (databaseError) {
+      console.error("No se pudo registrar la alerta en SQLite:", databaseError.message);
+      const databaseMessage = "No se pudo registrar la alerta en SQLite";
+      socket.emit(EVT.ALERT_ERROR, { mensaje: databaseMessage });
+      responder({ ok: false, error: databaseMessage });
+      return;
+    }
+
     difundirAlerta(alerta);
     responder({ ok: true });
   });
@@ -174,7 +200,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// Iniciar el servidor.
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor HTTP disponible en el puerto ${PORT}`);
   console.log(`Prueba local: http://localhost:${PORT}`);
