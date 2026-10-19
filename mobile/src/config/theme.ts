@@ -1,7 +1,3 @@
-/**
- * Paleta de colores centralizada del proyecto.
- * Cambiar aquí afecta a toda la app.
- */
 export const COLORS = {
   // Primarios
   primary: "#1e40af",

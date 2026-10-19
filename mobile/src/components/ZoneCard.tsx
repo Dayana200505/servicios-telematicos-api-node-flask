@@ -16,7 +16,7 @@ import {
 import type { ZoneInfo } from "../types/zones";
 import { COLORS, RADIUS, SPACING } from "../config/theme";
 
-// Mapeo: zona -> componente de icono de Lucide
+// Mapeo: zona 
 const ZONE_ICONS: Record<
   string,
   React.ComponentType<{ size: number; color: string; strokeWidth?: number }>
