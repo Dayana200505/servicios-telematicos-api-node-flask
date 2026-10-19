@@ -104,6 +104,7 @@ Con la aplicación móvil conectada y suscrita a una zona, abrir otra terminal:
 cd D:\servicios-telematicos-api-node-flask\flask-server
 venv\Scripts\activate
 python cliente_prueba.py http://localhost:5000 norte --duracion 60
+en otra terminal:
 python enviar_alerta.py http://localhost:5000 norte
 ```
 
