@@ -168,6 +168,20 @@ class SocketService {
   }
 
   /**
+   * Suscribirse a una zona (norte/centro/sur).
+   * Devuelve false si no hay conexión.
+   */
+  subscribeToZone(zone: string): boolean {
+    if (!this.socket?.connected) {
+      log(`[Socket] No se pudo suscribir a "${zone}": sin conexión`);
+      return false;
+    }
+    this.socket.emit(EVENTS.SUBSCRIBE_ZONE, { zona: zone });
+    log(`[Socket] 📍 Suscrito a zona: ${zone}`);
+    return true;
+  }
+
+  /**
    * Notifica solo si el estado cambió (evita re-renders por cada
    * connect_error durante los reintentos) y aísla errores de listeners.
    */
