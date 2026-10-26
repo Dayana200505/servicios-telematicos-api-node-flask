@@ -52,10 +52,7 @@ database.exec(`
   )
 `);
 
-const insertarAlerta = database.prepare(`
-  INSERT INTO alertas (tipo, gravedad, zona, mensaje, emitida_en, fecha_hora)
-  VALUES (?, ?, ?, ?, ?, ?)
-`);
+
 
 app.get("/", (req, res) => {
   res.json({
@@ -174,14 +171,17 @@ io.on("connection", (socket) => {
     alerta.fecha_hora = new Date().toISOString();
 
     try {
-      insertarAlerta.run(
-        alerta.tipo,
-        alerta.gravedad,
-        alerta.zona,
-        alerta.mensaje,
-        alerta.emitida_en,
-        alerta.fecha_hora
-      );
+      database.prepare(`
+  INSERT INTO alertas (tipo, gravedad, zona, mensaje, emitida_en, fecha_hora)
+  VALUES (?, ?, ?, ?, ?, ?)
+`).run(
+  alerta.tipo,
+  alerta.gravedad,
+  alerta.zona,
+  alerta.mensaje,
+  alerta.emitida_en,
+  alerta.fecha_hora
+);
     } catch (databaseError) {
       console.error("No se pudo registrar la alerta en SQLite:", databaseError.message);
       const databaseMessage = "No se pudo registrar la alerta en SQLite";
