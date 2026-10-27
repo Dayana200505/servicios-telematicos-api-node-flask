@@ -1,0 +1,5 @@
+fecha,servidor,url,clientes_solicitados,conexiones_simultaneas,conexiones_fallidas,emisores,duracion_carga_s,alertas_enviadas,alertas_aceptadas,errores_rechazo,errores_timeout,mensajes_esperados,mensajes_recibidos,desconexiones_inesperadas,throughput_ingesta_alertas_s,throughput_entrega_msgs_s,nota
+2026-10-27T07:46:31,node,http://localhost:3001,50,50,0,5,10.03,2575,2575,0,0,25750,25750,0,256.85,2568.49,
+2026-10-27T07:46:51,node,http://localhost:3001,100,100,0,5,10.02,1870,1870,0,0,18700,18700,0,186.58,1865.84,
+2026-10-27T07:47:14,node,http://localhost:3001,500,500,0,5,10.02,1750,1750,0,0,17500,17500,0,174.56,1745.65,
+2026-10-27T07:47:42,node,http://localhost:3001,1000,1000,0,5,10.03,1873,1873,0,0,18730,18730,0,186.73,1867.28,

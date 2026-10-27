@@ -1,0 +1,5 @@
+﻿"stack","escenario_clientes","conexiones_exitosas","conexiones_fallidas","latencia_prom_ms","p95_ms","throughput_ingesta_alertas_s","throughput_entrega_msgs_s","mensajes_esperados","mensajes_recibidos","nota"
+"node","50","50","0","13.33","16.65","256.85","2568.49","25750","25750",""
+"node","100","100","0","17.42","22.6","186.58","1865.84","18700","18700",""
+"node","500","500","0","26.73","36.98","174.56","1745.65","17500","17500",""
+"node","1000","1000","0","47.17","103.21","186.73","1867.28","18730","18730",""

@@ -1,0 +1,5 @@
+fecha,servidor,url,clientes_solicitados,conexiones_simultaneas,conexiones_fallidas,emisores,duracion_carga_s,alertas_enviadas,alertas_aceptadas,errores_rechazo,errores_timeout,mensajes_esperados,mensajes_recibidos,desconexiones_inesperadas,throughput_ingesta_alertas_s,throughput_entrega_msgs_s,nota
+2026-10-27T07:50:42,flask,http://localhost:5000,50,50,0,5,10.02,2066,2066,0,0,20660,20660,0,206.19,2061.92,
+2026-10-27T07:51:01,flask,http://localhost:5000,100,100,0,5,10.01,2121,2121,0,0,21210,21210,0,211.83,2118.33,
+2026-10-27T07:51:24,flask,http://localhost:5000,500,500,0,5,10.01,1826,1826,0,0,18260,18260,0,182.48,1824.76,
+2026-10-27T07:51:53,flask,http://localhost:5000,1000,511,489,0,0.0,0,0,0,0,0,0,511,,,el servidor rechazo nuevas conexiones; no se pudo medir

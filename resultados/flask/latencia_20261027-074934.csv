@@ -1,0 +1,5 @@
+fecha,servidor,url,clientes_solicitados,clientes_conectados,clientes_suscritos,alertas_enviadas,mensajes_esperados,mensajes_recibidos,latencia_min_ms,latencia_prom_ms,latencia_max_ms,p95_ms,p99_ms,nota
+2026-10-27T07:48:27,flask,http://localhost:5000,50,50,50,20,1000,1000,6.53,17.88,26.64,23.23,25.61,
+2026-10-27T07:48:46,flask,http://localhost:5000,100,100,100,20,2000,2000,8.18,18.45,32.79,25.41,32.58,
+2026-10-27T07:49:10,flask,http://localhost:5000,500,500,500,20,10000,10000,10.11,38.2,95.1,83.51,93.4,
+2026-10-27T07:49:29,flask,http://localhost:5000,1000,510,510,20,10200,0,,,,,,el servidor rechazo nuevas conexiones; no se midio latencia
