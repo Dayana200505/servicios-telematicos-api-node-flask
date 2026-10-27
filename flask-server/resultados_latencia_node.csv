@@ -1,5 +1,5 @@
 fecha,servidor,url,clientes_solicitados,clientes_conectados,clientes_suscritos,alertas_enviadas,mensajes_esperados,mensajes_recibidos,latencia_min_ms,latencia_prom_ms,latencia_max_ms,p95_ms,p99_ms,nota
-2026-10-24T14:01:06,node,http://localhost:3001,50,50,50,20,1000,1000,4.22,8.91,13.7,12.48,13.51,
-2026-10-24T14:01:25,node,http://localhost:3001,100,100,100,20,2000,2000,4.64,11.42,17.1,15.85,16.81,
-2026-10-24T14:01:50,node,http://localhost:3001,500,500,500,20,10000,10000,4.81,30.83,59.75,45.41,54.41,
-2026-10-24T14:02:20,node,http://localhost:3001,1000,1000,1000,20,20000,20000,4.7,59.86,145.49,120.04,142.12,
+2026-10-27T07:44:50,node,http://localhost:3001,50,50,50,20,1000,1000,6.46,13.33,17.51,16.65,17.39,
+2026-10-27T07:45:10,node,http://localhost:3001,100,100,100,20,2000,2000,9.11,17.42,24.03,22.6,23.45,
+2026-10-27T07:45:33,node,http://localhost:3001,500,500,500,20,10000,10000,4.31,26.73,49.23,36.98,47.17,
+2026-10-27T07:46:02,node,http://localhost:3001,1000,1000,1000,20,20000,20000,6.0,47.17,129.23,103.21,127.63,

@@ -1,0 +1,5 @@
+fecha,servidor,clientes_solicitados,conexiones_exitosas,conexiones_fallidas,desconexiones_inesperadas,desconexiones_controladas,tiempo_promedio_conexion_ms,duracion_total_ms
+2026-10-27T07:42:36,http://localhost:5000,50,50,0,0,50,265.39,6092.67
+2026-10-27T07:42:44,http://localhost:5000,100,100,0,0,100,262.38,6644.85
+2026-10-27T07:42:57,http://localhost:5000,500,500,0,0,500,264.33,11312.86
+2026-10-27T07:43:18,http://localhost:5000,1000,511,489,511,0,265.97,19619.17

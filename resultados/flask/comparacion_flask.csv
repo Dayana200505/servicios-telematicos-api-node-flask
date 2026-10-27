@@ -1,0 +1,5 @@
+﻿"stack","escenario_clientes","conexiones_exitosas","conexiones_fallidas","latencia_prom_ms","p95_ms","throughput_ingesta_alertas_s","throughput_entrega_msgs_s","mensajes_esperados","mensajes_recibidos","nota"
+"flask","50","50","0","17.88","23.23","206.19","2061.92","20660","20660",""
+"flask","100","100","0","18.45","25.41","211.83","2118.33","21210","21210",""
+"flask","500","500","0","38.2","83.51","182.48","1824.76","18260","18260",""
+"flask","1000","511","489","","","","","0","0","el servidor rechazo nuevas conexiones; no se midio latencia | el servidor rechazo nuevas conexiones; no se pudo medir"

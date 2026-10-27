@@ -1,0 +1,2 @@
+fecha,servidor,url,clientes_solicitados,conexiones_simultaneas,conexiones_fallidas,emisores,duracion_carga_s,alertas_enviadas,alertas_aceptadas,errores_rechazo,errores_timeout,mensajes_esperados,mensajes_recibidos,desconexiones_inesperadas,throughput_ingesta_alertas_s,throughput_entrega_msgs_s,nota
+2026-10-27T07:49:54,flask,http://localhost:5000,50,0,50,0,0.0,0,0,0,0,0,0,0,,,el servidor rechazo nuevas conexiones; no se pudo medir
