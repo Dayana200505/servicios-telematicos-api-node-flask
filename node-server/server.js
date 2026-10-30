@@ -6,15 +6,9 @@ const { Server } = require("socket.io");
 
 const app = express();
 const httpServer = http.createServer(app);
-
-const io = new Server(httpServer, {
-  cors: {
-    origin: "*",
-  },
-});
+const io = new Server(httpServer, { cors: { origin: "*" } });
 
 const PORT = 3001;
-// Nombres de eventos 
 const EVT = {
   SUBSCRIBE_ZONE: "suscribir_zona",
   EMIT_ALERT: "emitir_alerta",
@@ -23,20 +17,14 @@ const EVT = {
   ZONE_ERROR: "error_zona",
   ALERT_ERROR: "error_alerta",
 };
-// Zonas logicas permitidas
-const ZONAS_VALIDAS = ["norte", "centro", "sur"];
 
+const ZONAS_VALIDAS = ["norte", "centro", "sur"];
 const GRAVEDADES_VALIDAS = ["baja", "media", "alta"];
-const ALIAS_GRAVEDAD = new Map([
-  ["bajo", "baja"],
-  ["medio", "media"],
-  ["alto", "alta"],
-]);
+const ALIAS_GRAVEDAD = new Map([["bajo", "baja"], ["medio", "media"], ["alto", "alta"]]);
 const CAMPOS_OBLIGATORIOS = ["tipo", "gravedad", "zona", "mensaje"];
 const MAX_MENSAJE = 200;
 
 const zonaPorCliente = new Map();
-
 const databasePath = process.env.ALERTAS_DB_PATH || path.join(__dirname, "alertas.db");
 const database = new DatabaseSync(databasePath);
 
@@ -52,13 +40,20 @@ database.exec(`
   )
 `);
 
-
-
 app.get("/", (req, res) => {
-  res.json({
-    message: "Servidor base de alertas funcionando",
-    status: "OK",
-  });
+  res.json({ message: "Servidor base de alertas funcionando", status: "OK" });
+});
+
+// RUTA PARA EL HISTORIAL (SOLUCIONA EL ERROR)
+app.get("/alertas", (req, res) => {
+  try {
+    const filas = database.prepare(
+      "SELECT tipo, gravedad, zona, mensaje, emitida_en, fecha_hora FROM alertas ORDER BY id DESC LIMIT 50"
+    ).all();
+    res.json({ status: "ok", alertas: filas });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
 });
 
 function normalizarZona(data) {
@@ -68,19 +63,12 @@ function normalizarZona(data) {
 
 function asignarZona(socket, data) {
   const nueva = normalizarZona(data);
-
   if (!ZONAS_VALIDAS.includes(nueva)) {
-    socket.emit(EVT.ZONE_ERROR, {
-      mensaje: `Zona invalida. Opciones: ${ZONAS_VALIDAS.join(", ")}`,
-    });
+    socket.emit(EVT.ZONE_ERROR, { mensaje: `Zona invalida. Opciones: ${ZONAS_VALIDAS.join(", ")}` });
     return;
   }
-
   const anterior = zonaPorCliente.get(socket.id);
-  if (anterior && anterior !== nueva) {
-    socket.leave(anterior);
-  }
-
+  if (anterior && anterior !== nueva) socket.leave(anterior);
   socket.join(nueva);
   zonaPorCliente.set(socket.id, nueva);
   socket.emit(EVT.ZONE_CONFIRMED, { zona: nueva });
@@ -95,64 +83,39 @@ function validarAlerta(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return { error: "La alerta debe enviarse con tipo, gravedad, zona y mensaje" };
   }
-
   const faltantes = CAMPOS_OBLIGATORIOS.filter((c) => !limpiar(data[c]));
-  if (faltantes.length > 0) {
-    return { error: `Faltan campos obligatorios: ${faltantes.join(", ")}` };
-  }
+  if (faltantes.length > 0) return { error: `Faltan campos obligatorios: ${faltantes.join(", ")}` };
 
   const zona = limpiar(data.zona).toLowerCase();
-  if (!ZONAS_VALIDAS.includes(zona)) {
-    return { error: `Zona invalida. Opciones: ${ZONAS_VALIDAS.join(", ")}` };
-  }
+  if (!ZONAS_VALIDAS.includes(zona)) return { error: `Zona invalida. Opciones: ${ZONAS_VALIDAS.join(", ")}` };
 
   let gravedad = limpiar(data.gravedad).toLowerCase();
   gravedad = ALIAS_GRAVEDAD.get(gravedad) || gravedad;
-  if (!GRAVEDADES_VALIDAS.includes(gravedad)) {
-    return { error: `Gravedad invalida. Opciones: ${GRAVEDADES_VALIDAS.join(", ")}` };
-  }
+  if (!GRAVEDADES_VALIDAS.includes(gravedad)) return { error: `Gravedad invalida. Opciones: ${GRAVEDADES_VALIDAS.join(", ")}` };
 
   const mensaje = limpiar(data.mensaje);
-  if (mensaje.length > MAX_MENSAJE) {
-    return { error: `El mensaje supera ${MAX_MENSAJE} caracteres` };
-  }
+  if (mensaje.length > MAX_MENSAJE) return { error: `El mensaje supera ${MAX_MENSAJE} caracteres` };
 
-  return {
-    alerta: {
-      tipo: limpiar(data.tipo).toLowerCase(),
-      gravedad,
-      zona,
-      mensaje,
-    },
-  };
+  return { alerta: { tipo: limpiar(data.tipo).toLowerCase(), gravedad, zona, mensaje } };
 }
 
 function contarClientes(zona) {
   let total = 0;
-  for (const z of zonaPorCliente.values()) {
-    if (z === zona) total++;
-  }
+  for (const z of zonaPorCliente.values()) if (z === zona) total++;
   return total;
 }
 
 function difundirAlerta(alerta) {
   const destinatarios = contarClientes(alerta.zona);
   io.to(alerta.zona).emit(EVT.ALERT_RECEIVED, alerta);
-  console.log(
-    `Alerta ${alerta.tipo}/${alerta.gravedad} -> ${alerta.zona} (${destinatarios} clientes)`
-  );
+  console.log(`Alerta ${alerta.tipo}/${alerta.gravedad} -> ${alerta.zona} (${destinatarios} clientes)`);
   return destinatarios;
 }
 
 io.on("connection", (socket) => {
   console.log(`Cliente conectado: ${socket.id}`);
-
-  const inicial =
-    (socket.handshake.auth && socket.handshake.auth.zona) ||
-    (socket.handshake.query && socket.handshake.query.zona);
-  if (inicial) {
-    asignarZona(socket, inicial);
-  }
+  const inicial = (socket.handshake.auth && socket.handshake.auth.zona) || (socket.handshake.query && socket.handshake.query.zona);
+  if (inicial) asignarZona(socket, inicial);
 
   socket.on(EVT.SUBSCRIBE_ZONE, (data) => asignarZona(socket, data));
 
@@ -161,7 +124,6 @@ io.on("connection", (socket) => {
     const { alerta, error } = validarAlerta(data);
 
     if (error) {
-      console.log(`Alerta rechazada: ${error}`);
       socket.emit(EVT.ALERT_ERROR, { mensaje: error });
       responder({ ok: false, error });
       return;
@@ -172,18 +134,10 @@ io.on("connection", (socket) => {
 
     try {
       database.prepare(`
-  INSERT INTO alertas (tipo, gravedad, zona, mensaje, emitida_en, fecha_hora)
-  VALUES (?, ?, ?, ?, ?, ?)
-`).run(
-  alerta.tipo,
-  alerta.gravedad,
-  alerta.zona,
-  alerta.mensaje,
-  alerta.emitida_en,
-  alerta.fecha_hora
-);
+        INSERT INTO alertas (tipo, gravedad, zona, mensaje, emitida_en, fecha_hora)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(alerta.tipo, alerta.gravedad, alerta.zona, alerta.mensaje, alerta.emitida_en, alerta.fecha_hora);
     } catch (databaseError) {
-      console.error("No se pudo registrar la alerta en SQLite:", databaseError.message);
       const databaseMessage = "No se pudo registrar la alerta en SQLite";
       socket.emit(EVT.ALERT_ERROR, { mensaje: databaseMessage });
       responder({ ok: false, error: databaseMessage });
@@ -202,5 +156,4 @@ io.on("connection", (socket) => {
 
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor HTTP disponible en el puerto ${PORT}`);
-  console.log(`Prueba local: http://localhost:${PORT}`);
 });

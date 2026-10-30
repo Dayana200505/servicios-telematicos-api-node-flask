@@ -5,6 +5,7 @@ import React, {
   useState,
   useCallback,
 } from "react";
+import { Vibration, Platform } from "react-native"; // <-- Solo Vibration
 import { socketService } from "../services/socket";
 import { EVENTS } from "../config/env";
 import type { Zone } from "../types/zones";
@@ -69,6 +70,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         console.warn("[Context] Alerta recibida con formato invalido", data);
         return;
       }
+
+      // --- VIBRACIÓN FUERTE DE TODO EL CELULAR ---
+      // Patrón: 0ms espera, 500ms vibra, 200ms pausa, 500ms vibra (1 segundo en total)
+      if (Platform.OS === "android") {
+        Vibration.vibrate([0, 500, 200, 500]);
+      } else {
+        Vibration.vibrate(1000); 
+      }
+      // -------------------------------------------
 
       setAlerts((current) => [
         { ...data, emitida_en: data.emitida_en ?? Date.now() },
