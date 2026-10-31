@@ -1,38 +1,82 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
-  ActivityIndicator,
   Platform,
   ScrollView,
+  Animated,
+  Modal,
+  RefreshControl,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useSocket } from "../hooks/useSocket";
 import { SERVER_URL } from "../config/env";
 import { COLORS, RADIUS, SPACING } from "../config/theme";
 
 type Props = {
   onManageZones: () => void;
+  onOpenAdmin?: () => void;
 };
 
-function AlertBell({ connected }: { connected: boolean }) {
+// Mapeo de iconos para cada tipo de alerta
+const getAlertIcon = (tipo: string) => {
+  const t = tipo.toLowerCase();
+  if (t.includes("incendio")) return "flame";
+  if (t.includes("sismo")) return "pulse";
+  if (t.includes("inundación") || t.includes("agua")) return "water";
+  if (t.includes("tormenta") || t.includes("lluvia")) return "thunderstorm";
+  if (t.includes("seguridad") || t.includes("robo")) return "shield-checkmark";
+  if (t.includes("salud")) return "medkit";
+  if (t.includes("corte")) return "flash";
+  return "warning";
+};
+
+// Mapeo de colores según gravedad
+const getSeverityColor = (gravedad: string) => {
+  const g = gravedad.toLowerCase();
+  if (g === "alta") return COLORS.danger;
+  if (g === "media") return COLORS.warning;
+  return COLORS.success;
+};
+
+// Campana que vibra visualmente al recibir una alerta
+function AlertBell({ connected, hasNewAlert }: { connected: boolean; hasNewAlert: boolean }) {
+  const shake = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (hasNewAlert) {
+      Animated.sequence([
+        Animated.timing(shake, { toValue: 1, duration: 80, useNativeDriver: true }),
+        Animated.timing(shake, { toValue: -1, duration: 80, useNativeDriver: true }),
+        Animated.timing(shake, { toValue: 1, duration: 80, useNativeDriver: true }),
+        Animated.timing(shake, { toValue: -1, duration: 80, useNativeDriver: true }),
+        Animated.timing(shake, { toValue: 0, duration: 80, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [hasNewAlert, shake]);
+
+  const rotate = shake.interpolate({
+    inputRange: [-1, 1],
+    outputRange: ["-15deg", "15deg"],
+  });
+
   return (
     <View
       style={[styles.headerIconContainer, !connected && styles.headerIconOff]}
       accessible
       accessibilityRole="image"
-      accessibilityLabel={
-        connected ? "Alertas activas" : "Alertas desactivadas"
-      }
     >
-      <Ionicons
-        name={connected ? "notifications" : "notifications-off"}
-        size={36}
-        color={COLORS.white}
-      />
+      <Animated.View style={{ transform: [{ rotate }] }}>
+        <Ionicons
+          name={connected ? "notifications" : "notifications-off"}
+          size={36}
+          color={COLORS.white}
+        />
+      </Animated.View>
       <View
         style={[
           styles.bellBadge,
@@ -43,113 +87,76 @@ function AlertBell({ connected }: { connected: boolean }) {
   );
 }
 
-export default function ConnectionStatusScreen({ onManageZones }: Props) {
-  const { isConnected, socketId, reconnect, currentZone, alerts } = useSocket();
-  const [showDetails, setShowDetails] = useState<boolean>(true);
+export default function ConnectionStatusScreen({ onManageZones, onOpenAdmin }: Props) {
+  const { isConnected, socketId, currentZone, alerts } = useSocket();
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [hasNewAlert, setHasNewAlert] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Solo animamos la campana cuando llega una alerta (la vibración está en el Contexto)
+  useEffect(() => {
+    if (alerts.length > 0) {
+      setHasNewAlert(true);
+      const timer = setTimeout(() => setHasNewAlert(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [alerts.length]);
+
+  // Función de Pull to Refresh
+  const onRefresh = () => {
+    setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setTimeout(() => setRefreshing(false), 1000);
+  };
 
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
 
+      {/* BOTÓN DE INFO (Arriba a la IZQUIERDA) */}
+      <TouchableOpacity
+        style={styles.infoButton}
+        onPress={() => setShowDetailsModal(true)}
+      >
+        <Ionicons name="information-circle-outline" size={28} color={COLORS.gray} />
+      </TouchableOpacity>
+
       {/* HEADER */}
       <View style={styles.header}>
-        <AlertBell connected={isConnected} />
+        <AlertBell connected={isConnected} hasNewAlert={hasNewAlert} />
         <Text style={styles.headerTitle}>Alertas Comunitarias</Text>
         <Text style={styles.headerSubtitle}>Emergencias en tiempo real</Text>
       </View>
 
-      {/* TARJETA DE ESTADO */}
-      <View style={styles.card}>
-        <View
-          style={[
-            styles.statusBadge,
-            isConnected ? styles.badgeConnected : styles.badgeDisconnected,
-          ]}
-        >
-          <View
-            style={[
-              styles.statusDot,
-              isConnected ? styles.dotConnected : styles.dotDisconnected,
-            ]}
-          />
-          <Text
-            style={[
-              styles.statusText,
-              isConnected ? styles.textConnected : styles.textDisconnected,
-            ]}
-          >
-            {isConnected ? "Conectado" : "Desconectado"}
-          </Text>
-        </View>
-
-        <Text style={styles.statusDescription}>
-          {isConnected
-            ? "Recibiendo alertas del servidor en tiempo real."
-            : "Sin conexión con el servidor. Reintentando automáticamente…"}
-        </Text>
-
-        {!isConnected && (
-          <ActivityIndicator
-            size="small"
-            color={COLORS.primary}
-            style={styles.spinner}
-          />
-        )}
-      </View>
-
-      {/* DETALLES */}
-      <TouchableOpacity
-        style={styles.detailsToggle}
-        onPress={() => setShowDetails((v) => !v)}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.detailsToggleText}>
-          {showDetails ? "▾ Ocultar detalles" : "▸ Ver detalles de conexión"}
-        </Text>
-      </TouchableOpacity>
-
-      {showDetails && (
-        <View style={styles.detailsBox}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>SERVIDOR</Text>
-            <Text style={styles.detailValue} selectable>
-              {SERVER_URL}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>ID DE SESIÓN</Text>
-            <Text style={styles.detailValue} selectable>
-              {socketId ?? "—"}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>ZONA ACTUAL</Text>
-            <Text style={styles.detailValue} selectable>
-              {currentZone ? currentZone.toUpperCase() : "Sin asignar"}
-            </Text>
-          </View>
-          <View style={[styles.detailRow, styles.detailRowLast]}>
-            <Text style={styles.detailLabel}>PROTOCOLO</Text>
-            <Text style={styles.detailValue}>WebSocket (RFC 6455)</Text>
-          </View>
-        </View>
-      )}
-
-      {/* BOTÓN PRINCIPAL */}
+      {/* ALERTAS RECIBIDAS */}
       <View style={styles.alertsHeader}>
         <View>
           <Text style={styles.alertsTitle}>Alertas recibidas</Text>
           <Text style={styles.alertsSubtitle}>
-            Solo se muestran alertas de la zona suscrita
+            Zona actual: {currentZone ? currentZone.toUpperCase() : "Sin asignar"}
           </Text>
         </View>
-        <Text style={styles.alertsCount}>{alerts.length}</Text>
+        
+        <View style={styles.alertsHeaderRight}>
+          <Text style={styles.alertsCount}>{alerts.length}</Text>
+          <TouchableOpacity style={styles.zoneIconButton} onPress={onManageZones}>
+            <Ionicons name="location" size={20} color={COLORS.white} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
         style={styles.alertsList}
         contentContainerStyle={alerts.length === 0 ? styles.emptyAlerts : undefined}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
       >
         {alerts.length === 0 ? (
           <Text style={styles.emptyAlertsText}>
@@ -158,56 +165,83 @@ export default function ConnectionStatusScreen({ onManageZones }: Props) {
               : "Selecciona una zona para recibir alertas."}
           </Text>
         ) : (
-          alerts.map((alert, index) => (
-            <View key={`${alert.emitida_en}-${index}`} style={styles.alertCard}>
-              <View style={styles.alertCardHeader}>
-                <Text style={styles.alertType}>{alert.tipo.toUpperCase()}</Text>
-                <Text style={styles.alertSeverity}>{alert.gravedad.toUpperCase()}</Text>
+          alerts.map((alert, index) => {
+            const sevColor = getSeverityColor(alert.gravedad);
+            return (
+              <View key={`${alert.emitida_en}-${index}`} style={styles.alertCard}>
+                <View style={[styles.alertBar, { backgroundColor: sevColor }]} />
+                
+                <View style={styles.alertContent}>
+                  <View style={styles.alertCardHeader}>
+                    <View style={styles.alertTitleRow}>
+                      <View style={[styles.alertIconBg, { backgroundColor: sevColor + "15" }]}>
+                        <Ionicons name={getAlertIcon(alert.tipo)} size={16} color={sevColor} />
+                      </View>
+                      <Text style={styles.alertType}>{alert.tipo.toUpperCase()}</Text>
+                    </View>
+                    <View style={[styles.severityBadge, { backgroundColor: sevColor }]}>
+                      <Text style={styles.alertSeverity}>{alert.gravedad.toUpperCase()}</Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.alertZone}>Zona {alert.zona.toUpperCase()}</Text>
+                  <Text style={styles.alertMessage}>{alert.mensaje}</Text>
+                  
+                  <Text style={styles.alertDate}>
+                    {alert.fecha_hora
+                      ? new Date(alert.fecha_hora).toLocaleString()
+                      : new Date(alert.emitida_en).toLocaleString()}
+                  </Text>
+                </View>
               </View>
-              <Text style={styles.alertZone}>Zona {alert.zona.toUpperCase()}</Text>
-              <Text style={styles.alertMessage}>{alert.mensaje}</Text>
-              <Text style={styles.alertDate}>
-                {alert.fecha_hora
-                  ? new Date(alert.fecha_hora).toLocaleString()
-                  : new Date(alert.emitida_en).toLocaleString()}
-              </Text>
-            </View>
-          ))
+            );
+          })
         )}
       </ScrollView>
 
-      <TouchableOpacity
-        style={styles.zoneButton}
-        onPress={onManageZones}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="location-outline" size={20} color={COLORS.white} />
-        <Text style={styles.zoneButtonText}>
-          {currentZone ? `Cambiar zona (${currentZone})` : "Seleccionar zona"}
-        </Text>
-      </TouchableOpacity>
-
-      {/* BOTÓN SECUNDARIO */}
-      <TouchableOpacity
-        style={[styles.button, isConnected && styles.buttonSecondary]}
-        onPress={reconnect}
-        activeOpacity={0.7}
-      >
-        <Text
-          style={[
-            styles.buttonText,
-            isConnected && styles.buttonTextSecondary,
-          ]}
-        >
-          {isConnected ? "Reiniciar conexión" : "Reconectar ahora"}
-        </Text>
-      </TouchableOpacity>
+      {/* BOTÓN DE SUPERUSUARIO */}
+      {onOpenAdmin && (
+        <TouchableOpacity style={styles.adminButton} onPress={onOpenAdmin}>
+          <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.danger} />
+          <Text style={styles.adminButtonText}>Panel de superusuario</Text>
+        </TouchableOpacity>
+      )}
 
       {/* FOOTER */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>UMSS · Ingeniería Informática</Text>
-        <Text style={styles.footerText}>Servicios Telemáticos · Grupo 5</Text>
       </View>
+
+      {/* MODAL DE DETALLES TÉCNICOS */}
+      <Modal visible={showDetailsModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Detalles de conexión</Text>
+              <TouchableOpacity onPress={() => setShowDetailsModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>SERVIDOR</Text>
+              <Text style={styles.detailValue}>{SERVER_URL}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>ID DE SESIÓN</Text>
+              <Text style={styles.detailValue}>{socketId ?? "—"}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>ZONA ACTUAL</Text>
+              <Text style={styles.detailValue}>{currentZone ? currentZone.toUpperCase() : "Sin asignar"}</Text>
+            </View>
+            <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+              <Text style={styles.detailLabel}>PROTOCOLO</Text>
+              <Text style={styles.detailValue}>WebSocket (RFC 6455)</Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -218,11 +252,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     paddingHorizontal: SPACING.xl,
     paddingTop: Platform.OS === "android" ? 50 : 60,
-    paddingBottom: Platform.OS === "android" ? 60 : 40,
+    paddingBottom: Platform.OS === "android" ? 40 : 30,
+  },
+  infoButton: {
+    position: "absolute",
+    top: Platform.OS === "android" ? 45 : 55,
+    left: 20,
+    zIndex: 10,
   },
   header: {
     alignItems: "center",
-    marginBottom: SPACING.xxl,
+    marginBottom: SPACING.lg,
   },
   headerIconContainer: {
     width: 76,
@@ -231,7 +271,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -264,78 +304,17 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     marginTop: 4,
   },
-  card: {
-    backgroundColor: COLORS.grayBg,
-    borderRadius: RADIUS.lg,
-    paddingVertical: SPACING.xl,
-    paddingHorizontal: SPACING.xl,
-    alignItems: "center",
-    marginBottom: SPACING.md,
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    borderRadius: RADIUS.round,
-    marginBottom: 14,
-  },
-  badgeConnected: { backgroundColor: COLORS.successLight },
-  badgeDisconnected: { backgroundColor: COLORS.dangerLight },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  dotConnected: { backgroundColor: COLORS.success },
-  dotDisconnected: { backgroundColor: COLORS.danger },
-  statusText: { fontSize: 15, fontWeight: "600" },
-  textConnected: { color: COLORS.success },
-  textDisconnected: { color: COLORS.danger },
-  statusDescription: {
-    fontSize: 13,
-    color: COLORS.gray,
-    textAlign: "center",
-    lineHeight: 19,
-    paddingHorizontal: 10,
-  },
-  spinner: { marginTop: 12 },
-  detailsToggle: {
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  detailsToggleText: {
-    fontSize: 13,
-    color: COLORS.primary,
-    fontWeight: "600",
-  },
-  detailsBox: {
-    backgroundColor: COLORS.grayBg,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: 14,
-    marginBottom: SPACING.lg,
-  },
-  detailRow: { marginBottom: 14 },
-  detailRowLast: { marginBottom: 0 },
-  detailLabel: {
-    fontSize: 10,
-    color: COLORS.grayLight,
-    letterSpacing: 0.8,
-    marginBottom: 4,
-    fontWeight: "600",
-  },
-  detailValue: {
-    fontSize: 13,
-    color: COLORS.text,
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-  },
   alertsHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
+    marginTop: SPACING.md,
+  },
+  alertsHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   alertsTitle: {
     fontSize: 16,
@@ -343,7 +322,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   alertsSubtitle: {
-    fontSize: 11,
+    fontSize: 12,
     color: COLORS.gray,
     marginTop: 3,
   },
@@ -358,17 +337,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
+  zoneIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   alertsList: {
-    maxHeight: 235,
+    flex: 1,
     marginBottom: SPACING.md,
   },
   emptyAlerts: {
-    minHeight: 90,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: COLORS.grayBg,
     borderRadius: RADIUS.md,
-    padding: SPACING.lg,
+    padding: SPACING.xl,
+    minHeight: 150,
   },
   emptyAlertsText: {
     color: COLORS.gray,
@@ -376,16 +368,41 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   alertCard: {
-    backgroundColor: COLORS.grayBg,
+    flexDirection: "row",
+    backgroundColor: COLORS.white,
     borderRadius: RADIUS.md,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.warning,
-    padding: SPACING.md,
     marginBottom: SPACING.sm,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+    overflow: "hidden",
+  },
+  alertBar: {
+    width: 6,
+    height: "100%",
+  },
+  alertContent: {
+    flex: 1,
+    padding: SPACING.md,
   },
   alertCardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  alertTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  alertIconBg: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: "center",
     alignItems: "center",
   },
   alertType: {
@@ -393,74 +410,94 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "800",
   },
+  severityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
   alertSeverity: {
-    color: COLORS.danger,
-    fontSize: 11,
+    color: COLORS.white,
+    fontSize: 10,
     fontWeight: "800",
+    letterSpacing: 0.5,
   },
   alertZone: {
     color: COLORS.primary,
     fontSize: 11,
     fontWeight: "700",
-    marginTop: 4,
+    marginLeft: 36,
   },
   alertMessage: {
     color: COLORS.textLight,
     fontSize: 13,
     lineHeight: 18,
     marginTop: 6,
+    marginLeft: 36,
   },
   alertDate: {
-    color: COLORS.gray,
+    color: COLORS.grayLight,
     fontSize: 10,
     marginTop: 8,
+    marginLeft: 36,
   },
-  zoneButton: {
+  adminButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 15,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.primary,
-    marginTop: 4,
     gap: 8,
-  },
-  zoneButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: COLORS.white,
-    marginLeft: 8,
-    letterSpacing: 0.2,
-  },
-  button: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 15,
+    paddingVertical: 13,
     borderRadius: RADIUS.md,
-    alignItems: "center",
+    backgroundColor: COLORS.dangerLight,
     marginTop: 10,
   },
-  buttonSecondary: {
-    backgroundColor: COLORS.white,
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
-  },
-  buttonText: {
-    color: COLORS.white,
-    fontSize: 15,
-    fontWeight: "600",
-    letterSpacing: 0.2,
-  },
-  buttonTextSecondary: { color: COLORS.primary },
+  adminButtonText: { color: COLORS.danger, fontSize: 14, fontWeight: "700" },
   footer: {
-    marginTop: "auto",
     alignItems: "center",
     paddingTop: SPACING.lg,
     paddingBottom: 4,
   },
-  footerText: {
-    fontSize: 11,
+  footerText: { fontSize: 11, color: COLORS.grayLight, textAlign: "center" },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    width: "100%",
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.xl,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.lg,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  detailRow: {
+    marginBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingBottom: 10,
+  },
+  detailLabel: {
+    fontSize: 10,
     color: COLORS.grayLight,
-    lineHeight: 16,
-    textAlign: "center",
+    letterSpacing: 0.8,
+    marginBottom: 4,
+    fontWeight: "600",
+  },
+  detailValue: {
+    fontSize: 13,
+    color: COLORS.text,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
 });
