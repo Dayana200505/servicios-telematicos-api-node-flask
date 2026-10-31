@@ -1,0 +1,5 @@
+fecha,servidor,url,clientes_solicitados,clientes_conectados,clientes_suscritos,alertas_enviadas,mensajes_esperados,mensajes_recibidos,latencia_min_ms,latencia_prom_ms,latencia_max_ms,p95_ms,p99_ms,nota
+2026-10-29T22:36:41,flask-linux,http://localhost:5000,50,50,50,20,1000,1000,6.07,15.11,19.92,19.57,19.84,
+2026-10-29T22:37:00,flask-linux,http://localhost:5000,100,100,100,20,2000,2000,7.25,16.75,25.41,22.47,24.79,
+2026-10-29T22:37:20,flask-linux,http://localhost:5000,500,500,500,20,10000,10000,9.3,41.7,89.73,65.42,86.7,
+2026-10-29T22:37:44,flask-linux,http://localhost:5000,1000,1000,1000,20,20000,20000,12.92,77.79,192.22,156.6,185.31,
