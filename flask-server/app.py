@@ -25,6 +25,7 @@ GRAVEDADES_VALIDAS = ["baja", "media", "alta"]
 ALIAS_GRAVEDAD = {"bajo": "baja", "medio": "media", "alto": "alta"}
 CAMPOS_OBLIGATORIOS = ["tipo", "gravedad", "zona", "mensaje"]
 MAX_MENSAJE = 200
+MAX_TIPO = 50
 
 DATABASE_PATH = Path(os.getenv("ALERTAS_DB_PATH", Path(__file__).with_name("alertas.db")))
 zona_por_cliente = {}
@@ -101,10 +102,28 @@ def limpiar(valor):
 
 def validar_alerta(data):
     if not isinstance(data, dict):
-        return None, "La alerta debe enviarse con tipo, gravedad, zona y mensaje"
-    faltantes = [c for c in CAMPOS_OBLIGATORIOS if not limpiar(data.get(c))]
+        return None, "La alerta debe enviarse como un objeto"
+
+    faltantes = [
+        campo
+        for campo in CAMPOS_OBLIGATORIOS
+        if not limpiar(data.get(campo))
+    ]
+
     if faltantes:
         return None, f"Faltan campos obligatorios: {', '.join(faltantes)}"
+
+    if not all(
+        isinstance(data.get(campo), str)
+        for campo in CAMPOS_OBLIGATORIOS
+    ):
+        return None, "Todos los campos deben ser texto"
+
+    tipo = limpiar(data["tipo"])
+
+    if len(tipo) > MAX_TIPO:
+        return None, f"El tipo de alerta no debe superar los {MAX_TIPO} caracteres"
+    
     zona = limpiar(data["zona"]).lower()
     if zona not in ZONAS_VALIDAS:
         return None, f"Zona invalida. Opciones: {', '.join(ZONAS_VALIDAS)}"
@@ -115,7 +134,7 @@ def validar_alerta(data):
     mensaje = limpiar(data["mensaje"])
     if len(mensaje) > MAX_MENSAJE:
         return None, f"El mensaje supera {MAX_MENSAJE} caracteres"
-    return {"tipo": limpiar(data["tipo"]).lower(), "gravedad": gravedad, "zona": zona, "mensaje": mensaje}, None
+    return {"tipo": tipo, "gravedad": gravedad, "zona": zona, "mensaje": mensaje}, None
 
 def contar_clientes(zona):
     return sum(1 for z in zona_por_cliente.values() if z == zona)
@@ -161,5 +180,5 @@ def handle_disconnect():
     zona_por_cliente.pop(request.sid, None)
     print(f"Cliente desconectado: {request.sid}")
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     socketio.run(app, host="0.0.0.0", port=5000)
