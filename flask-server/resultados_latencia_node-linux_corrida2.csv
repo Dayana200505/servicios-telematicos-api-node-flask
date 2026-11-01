@@ -1,0 +1,5 @@
+fecha,servidor,url,clientes_solicitados,clientes_conectados,clientes_suscritos,alertas_enviadas,mensajes_esperados,mensajes_recibidos,latencia_min_ms,latencia_prom_ms,latencia_max_ms,p95_ms,p99_ms,nota
+2026-10-29T22:41:50,node-linux,http://localhost:3001,50,50,50,20,1000,1000,5.64,12.48,26.24,22.57,26.06,
+2026-10-29T22:42:08,node-linux,http://localhost:3001,100,100,100,20,2000,2000,5.48,15.72,24.37,23.01,24.13,
+2026-10-29T22:42:29,node-linux,http://localhost:3001,500,500,500,20,10000,10000,5.69,37.77,77.06,55.62,75.62,
+2026-10-29T22:42:53,node-linux,http://localhost:3001,1000,1000,1000,20,20000,20000,6.34,74.1,148.43,141.1,146.6,
