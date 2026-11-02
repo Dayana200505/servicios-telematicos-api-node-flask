@@ -2,6 +2,10 @@ import { io, Socket } from "socket.io-client";
 import { SERVER_URL, EVENTS } from "../config/env";
 
 type ConnectionListener = (connected: boolean) => void;
+const LOST_ALERTS_EVENT = "alertas_perdidas"; // evento nuevo del servidor
+
+type AlertaConId = { id?: number; [key: string]: unknown };
+type LostAlertsPayload = { zona: string; alertas: AlertaConId[] };
 
 /** Logs solo en desarrollo, para no ensuciar la consola en producción. */
 const log = (...args: unknown[]) => {
@@ -19,6 +23,8 @@ class SocketService {
   private listeners: Set<ConnectionListener> = new Set();
   private lastNotified: boolean | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private currentZone: string | null = null;
+  private lastAlertId: number | null = null;
 
   /**
    * Conecta al servidor. Si ya hay una conexión, no hace nada.
@@ -54,9 +60,34 @@ class SocketService {
    * Eventos base de conexión / desconexión.
    */
   private registerBaseEvents(socket: Socket) {
-    socket.on(EVENTS.CONNECT, () => {
+        socket.on(EVENTS.CONNECT, () => {
       log("[Socket] Conectado. ID:", socket.id);
       this.notify(true);
+
+      // Reconexión: volver a suscribirse a la zona y pedir lo que se perdió.
+      if (this.currentZone) {
+        const payload: { zona: string; ultimo_id?: number } = { zona: this.currentZone };
+        if (this.lastAlertId !== null) payload.ultimo_id = this.lastAlertId;
+        socket.emit(EVENTS.SUBSCRIBE_ZONE, payload);
+        log("[Socket] Resuscrito a la zona", payload);
+      }
+    });
+
+    // Recordar el id de la última alerta recibida (en vivo o recuperada).
+    socket.on(EVENTS.ALERT_RECEIVED, (alerta: AlertaConId) => {
+      if (typeof alerta?.id === "number" && (this.lastAlertId === null || alerta.id > this.lastAlertId)) {
+        this.lastAlertId = alerta.id;
+      }
+    });
+
+    // Alertas emitidas mientras estuvo desconectado: se entregan a los mismos
+    // listeners de alerta_recibida, para que la UI no tenga que cambiar.
+    socket.on(LOST_ALERTS_EVENT, (payload: LostAlertsPayload) => {
+      const alertas = payload?.alertas ?? [];
+      log(`[Socket] Recuperadas ${alertas.length} alertas perdidas de ${payload?.zona}`);
+      alertas.forEach((alerta) => {
+        socket.listeners(EVENTS.ALERT_RECEIVED).forEach((handler) => handler(alerta));
+      });
     });
 
     socket.on(EVENTS.DISCONNECT, (reason) => {
@@ -113,6 +144,8 @@ class SocketService {
     this.socket = null;
     this.listeners.clear();
     this.lastNotified = null;
+    this.currentZone = null;
+    this.lastAlertId = null;
   }
 
   /**
@@ -176,6 +209,10 @@ class SocketService {
       log(`[Socket] No se pudo suscribir a "${zone}": sin conexión`);
       return false;
     }
+
+    if (zone !== this.currentZone) this.lastAlertId = null;
+    this.currentZone = zone;
+
     this.socket.emit(EVENTS.SUBSCRIBE_ZONE, { zona: zone });
     log(`[Socket] Suscrito a zona: ${zone}`);
     return true;

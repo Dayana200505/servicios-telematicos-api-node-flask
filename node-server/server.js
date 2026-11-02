@@ -16,6 +16,7 @@ const EVT = {
   ZONE_CONFIRMED: "zona_confirmada",
   ZONE_ERROR: "error_zona",
   ALERT_ERROR: "error_alerta",
+  LOST_ALERTS: "alertas_perdidas",
 };
 
 const ZONAS_VALIDAS = ["norte", "centro", "sur"];
@@ -24,6 +25,7 @@ const TIPOS_VALIDOS = ["incendio", "sismo", "inundación", "deslizamiento", "tor
 const ALIAS_GRAVEDAD = new Map([["bajo", "baja"], ["medio", "media"], ["alto", "alta"]]);
 const CAMPOS_OBLIGATORIOS = ["tipo", "gravedad", "zona", "mensaje"];
 const MAX_MENSAJE = 200;
+const MAX_RECUPERADAS = 100;
 
 const zonaPorCliente = new Map();
 const databasePath = process.env.ALERTAS_DB_PATH || path.join(__dirname, "alertas.db");
@@ -62,6 +64,18 @@ function normalizarZona(data) {
   return String(valor || "").trim().toLowerCase();
 }
 
+function parsearUltimoId(data) {
+  if (!data || typeof data !== "object") return null;
+  const valor = Number.parseInt(data.ultimo_id, 10);
+  return Number.isInteger(valor) && valor >= 0 ? valor : null;
+}
+
+function alertasDesde(zona, ultimoId) {
+  return database.prepare(
+    "SELECT id, tipo, gravedad, zona, mensaje, emitida_en, fecha_hora FROM alertas WHERE zona = ? AND id > ? ORDER BY id ASC LIMIT ?"
+  ).all(zona, ultimoId, MAX_RECUPERADAS).map((fila) => ({ ...fila }));
+}
+
 function asignarZona(socket, data) {
   const nueva = normalizarZona(data);
   if (!ZONAS_VALIDAS.includes(nueva)) {
@@ -73,6 +87,10 @@ function asignarZona(socket, data) {
   socket.join(nueva);
   zonaPorCliente.set(socket.id, nueva);
   socket.emit(EVT.ZONE_CONFIRMED, { zona: nueva });
+    const ultimoId = parsearUltimoId(data);
+  if (ultimoId !== null) {
+    socket.emit(EVT.LOST_ALERTS, { zona: nueva, alertas: alertasDesde(nueva, ultimoId) });
+  }
   console.log(`Cliente ${socket.id} -> room ${nueva}`);
 }
 
@@ -135,11 +153,12 @@ io.on("connection", (socket) => {
     alerta.emitida_en = Date.now();
     alerta.fecha_hora = new Date().toISOString();
 
-    try {
-      database.prepare(`
+        try {
+      const resultado = database.prepare(`
         INSERT INTO alertas (tipo, gravedad, zona, mensaje, emitida_en, fecha_hora)
         VALUES (?, ?, ?, ?, ?, ?)
       `).run(alerta.tipo, alerta.gravedad, alerta.zona, alerta.mensaje, alerta.emitida_en, alerta.fecha_hora);
+      alerta.id = Number(resultado.lastInsertRowid);
     } catch (databaseError) {
       const databaseMessage = "No se pudo registrar la alerta en SQLite";
       socket.emit(EVT.ALERT_ERROR, { mensaje: databaseMessage });
