@@ -22,6 +22,7 @@ EVT_ALERT_ERROR = "error_alerta"
 
 ZONAS_VALIDAS = ["norte", "centro", "sur"]
 GRAVEDADES_VALIDAS = ["baja", "media", "alta"]
+TIPOS_VALIDOS = ["incendio", "sismo", "inundación", "deslizamiento", "tormenta", "seguridad", "salud", "corte de servicio"]
 ALIAS_GRAVEDAD = {"bajo": "baja", "medio": "media", "alto": "alta"}
 CAMPOS_OBLIGATORIOS = ["tipo", "gravedad", "zona", "mensaje"]
 MAX_MENSAJE = 200
@@ -108,6 +109,9 @@ def validar_alerta(data):
     zona = limpiar(data["zona"]).lower()
     if zona not in ZONAS_VALIDAS:
         return None, f"Zona invalida. Opciones: {', '.join(ZONAS_VALIDAS)}"
+    tipo = limpiar(data["tipo"]).lower()
+    if tipo not in TIPOS_VALIDOS:
+        return None, f"Tipo de alerta invalido. Opciones: {', '.join(TIPOS_VALIDOS)}"
     gravedad = limpiar(data["gravedad"]).lower()
     gravedad = ALIAS_GRAVEDAD.get(gravedad, gravedad)
     if gravedad not in GRAVEDADES_VALIDAS:
@@ -115,7 +119,7 @@ def validar_alerta(data):
     mensaje = limpiar(data["mensaje"])
     if len(mensaje) > MAX_MENSAJE:
         return None, f"El mensaje supera {MAX_MENSAJE} caracteres"
-    return {"tipo": limpiar(data["tipo"]).lower(), "gravedad": gravedad, "zona": zona, "mensaje": mensaje}, None
+    return {"tipo": tipo, "gravedad": gravedad, "zona": zona, "mensaje": mensaje}, None
 
 def contar_clientes(zona):
     return sum(1 for z in zona_por_cliente.values() if z == zona)
@@ -153,8 +157,8 @@ def handle_emitir_alerta(data):
         mensaje = "No se pudo registrar la alerta en SQLite"
         emit(EVT_ALERT_ERROR, {"mensaje": mensaje})
         return {"ok": False, "error": mensaje}
-    difundir_alerta(alerta)
-    return {"ok": True}
+    destinatarios = difundir_alerta(alerta)
+    return {"ok": True, "zona": alerta["zona"], "destinatarios": destinatarios, "no_entregados": 0}
 
 @socketio.on("disconnect")
 def handle_disconnect():

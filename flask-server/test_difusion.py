@@ -60,7 +60,8 @@ print("OK: los 4 clientes entraron a su room")
 # 1. Una alerta por zona: cada cliente debe recibir solo la de su zona.
 for zona in ("norte", "centro", "sur"):
     resp = emitir(emisor, {"tipo": "incendio", "gravedad": "alta", "zona": zona, "mensaje": f"Prueba en {zona}"})
-    assert resp == {"ok": True}, f"Respuesta inesperada del servidor: {resp}"
+    assert resp.get("ok") is True, f"Respuesta inesperada del servidor: {resp}"
+    assert resp["zona"] == zona and resp["destinatarios"] >= 0
 
 for nombre, zona in CLIENTES:
     assert len(recibidos[nombre]) == 1, f"{nombre} recibio {len(recibidos[nombre])} alertas, esperaba 1"
@@ -82,7 +83,8 @@ print("OK: las alertas invalidas se rechazan y no se difunden")
 
 # 3. Normalizacion: gravedad "Alto" -> "alta", tipo en minusculas.
 resp = emitir(emisor, {"tipo": "Incendio", "gravedad": "Alto", "zona": "sur", "mensaje": "Prueba de formato"})
-assert resp == {"ok": True}, f"Respuesta inesperada del servidor: {resp}"
+assert resp.get("ok") is True, f"Respuesta inesperada del servidor: {resp}"
+assert resp["zona"] == "sur" and resp["destinatarios"] >= 0
 ultima = recibidos["s1"][-1]
 assert ultima["gravedad"] == "alta" and ultima["tipo"] == "incendio", f"Alerta mal normalizada: {ultima}"
 assert len(recibidos["n1"]) == 1 and len(recibidos["n2"]) == 1 and len(recibidos["c1"]) == 1

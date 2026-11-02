@@ -10,7 +10,9 @@ export interface AlertDraft {
   mensaje: string;
 }
 
-export type EmitResult = { ok: true } | { ok: false; error: string };
+export type EmitResult =
+  | { ok: true; zona: Zone; destinatarios: number; no_entregados: number }
+  | { ok: false; error: string };
 
 export type Distribution = "destino" | "repartido";
 

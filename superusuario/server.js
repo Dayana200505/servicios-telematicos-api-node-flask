@@ -31,6 +31,7 @@ ioServer.on("connection", (socket) => {
       const clientes = [];
       const recibieron = { norte: 0, centro: 0, sur: 0 };
       const conectados = { norte: 0, centro: 0, sur: 0 };
+      const suscritos = { norte: 0, centro: 0, sur: 0 };
       const simulados = { norte: 0, centro: 0, sur: 0 };
       const latencias = [];
       let fallidos = 0;
@@ -70,6 +71,10 @@ ioServer.on("connection", (socket) => {
           client.emit("suscribir_zona", { zona });
         });
 
+        client.on("zona_confirmada", (confirmacion) => {
+          if (confirmacion && confirmacion.zona === zona) suscritos[zona]++;
+        });
+
         client.on("alerta_recibida", (data) => {
           if (data.zona === zona) {
             recibieron[zona]++;
@@ -101,6 +106,8 @@ ioServer.on("connection", (socket) => {
       }
 
       // 2. Emitir la alerta
+      // Dar tiempo a que cada cliente confirme su entrada a la room.
+      await new Promise((r) => setTimeout(r, 500));
       socket.emit("prueba:progreso", {
         fase: "emitiendo",
         hechos: 0,
@@ -109,11 +116,16 @@ ioServer.on("connection", (socket) => {
       });
 
       const emisor = io(url, { transports: ["websocket"] });
-      await new Promise((resolve) => {
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error("El emisor no recibió confirmación del servidor.")), 8000);
         emisor.on("connect", () => {
-          emisor.emit("emitir_alerta", { ...alerta, emitida_en: Date.now() });
-          resolve();
+          emisor.timeout(5000).emit("emitir_alerta", { ...alerta, emitida_en: Date.now() }, (error, respuesta) => {
+            clearTimeout(timer);
+            if (error || !respuesta || !respuesta.ok) reject(new Error(respuesta?.error || "El servidor rechazó la alerta."));
+            else resolve();
+          });
         });
+        emisor.on("connect_error", () => { clearTimeout(timer); reject(new Error("No se pudo conectar el emisor.")); });
       });
 
       // 3. Esperar a que lleguen los mensajes
@@ -129,6 +141,10 @@ ioServer.on("connection", (socket) => {
       const totalRecibieron = recibieron.norte + recibieron.centro + recibieron.sur;
       const totalConectados = conectados.norte + conectados.centro + conectados.sur;
       const totalSimulados = simulados.norte + simulados.centro + simulados.sur;
+      const objetivo = simulados[alerta.zona];
+      const conectadosDestino = conectados[alerta.zona];
+      const suscritosDestino = suscritos[alerta.zona];
+      const sinConexionDestino = objetivo - conectadosDestino;
       
       // Calcular métricas
       latencias.sort((a, b) => a - b);
@@ -154,13 +170,13 @@ ioServer.on("connection", (socket) => {
         usuarios,
         distribucion,
         zona: alerta.zona,
-        suscritos: totalConectados,
+        suscritos: Object.values(suscritos).reduce((a, b) => a + b, 0),
         fallidos,
-        objetivo: totalConectados,
+        objetivo,
         recibieron: totalRecibieron,
-        no_recibieron: totalConectados - totalRecibieron,
-        sin_conexion: totalSimulados - totalConectados,
-        sin_recepcion: totalConectados - totalRecibieron,
+        no_recibieron: objetivo - totalRecibieron,
+        sin_conexion: sinConexionDestino,
+        sin_recepcion: suscritosDestino - totalRecibieron,
         fuera_de_zona: fueraDeZona,
         entrega_pct: totalConectados > 0 ? Math.round((totalRecibieron / totalConectados) * 100) : 0,
         latencia: { min, prom, p95, p99: p95, max },

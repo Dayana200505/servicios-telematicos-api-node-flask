@@ -6,7 +6,7 @@
  * IP de tu PC en la red local (obtenla con: ipconfig).
  * Si tu IP cambia, debes actualizarla aquí.
  */
-export const SERVER_HOST = "192.168.100.5"; 
+export const SERVER_HOST = "192.168.100.45";
 
 // ============================================================
 // Puertos de los dos Stacks del proyecto
