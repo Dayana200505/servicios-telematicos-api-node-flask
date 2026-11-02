@@ -57,7 +57,7 @@ def emitir(zona):
         "mensaje": f"Prueba de cambio de zona: {zona}",
     }
     resp = emisor.call(EMIT_ALERT, alerta, timeout=5)
-    assert resp == {"ok": True}, f"Respuesta inesperada del servidor: {resp}"
+    assert resp.get("ok") is True, f"Respuesta inesperada del servidor: {resp}"
     time.sleep(0.4)
 
 

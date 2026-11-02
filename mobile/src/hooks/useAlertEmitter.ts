@@ -38,9 +38,9 @@ export function useAlertEmitter(stack: Stack) {
         resolve({ ok: false, error: "Sin conexión con el servidor." });
         return;
       }
-      socket.timeout(8000).emit(EVENTS.EMIT_ALERT, alerta, (err: Error | null, res?: { ok: boolean; error?: string }) => {
+      socket.timeout(8000).emit(EVENTS.EMIT_ALERT, alerta, (err: Error | null, res?: { ok: boolean; error?: string; zona?: AlertDraft["zona"]; destinatarios?: number; no_entregados?: number }) => {
         if (err) resolve({ ok: false, error: "El servidor no respondió a tiempo (timeout)." });
-        else if (res && res.ok) resolve({ ok: true });
+        else if (res && res.ok && res.zona && typeof res.destinatarios === "number") resolve({ ok: true, zona: res.zona, destinatarios: res.destinatarios, no_entregados: res.no_entregados ?? 0 });
         else resolve({ ok: false, error: res?.error ?? "El servidor rechazó la alerta." });
       });
     });

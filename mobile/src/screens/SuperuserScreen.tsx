@@ -158,8 +158,8 @@ export default function SuperuserScreen({ onBack }: Props) {
     setSending(false);
     if (res.ok) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setBanner({ kind: "ok", text: `Alerta emitida correctamente a la zona ${zona}.` });
-      pushLog(true, `Emitida a la zona ${zona} vía ${stack === "node" ? "Node.js" : "Flask"}`);
+      setBanner({ kind: "ok", text: `Alerta emitida a ${res.destinatarios} usuario(s) de ${res.zona}. No entregadas: ${res.no_entregados}.` });
+      pushLog(true, `Emitida a ${res.destinatarios} usuario(s) de ${res.zona} vía ${stack === "node" ? "Node.js" : "Flask"}`);
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setBanner({ kind: "err", text: res.error });
@@ -537,6 +537,7 @@ export default function SuperuserScreen({ onBack }: Props) {
                     <Stat label="Conectados" value={String(result.suscritos)} />
                     <Stat label="Recibieron" value={String(result.recibieron)} tone="good" />
                     <Stat label="No recibieron" value={String(result.no_recibieron)} tone="bad" />
+                    <Stat label="Sin conexión" value={String(result.sin_conexion)} tone="bad" />
                   </View>
                   <View style={styles.latRow}>
                     <Lat label="Prom." value={ms(result.latencia.prom)} />

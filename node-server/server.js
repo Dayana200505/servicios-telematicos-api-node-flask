@@ -20,6 +20,7 @@ const EVT = {
 
 const ZONAS_VALIDAS = ["norte", "centro", "sur"];
 const GRAVEDADES_VALIDAS = ["baja", "media", "alta"];
+const TIPOS_VALIDOS = ["incendio", "sismo", "inundación", "deslizamiento", "tormenta", "seguridad", "salud", "corte de servicio"];
 const ALIAS_GRAVEDAD = new Map([["bajo", "baja"], ["medio", "media"], ["alto", "alta"]]);
 const CAMPOS_OBLIGATORIOS = ["tipo", "gravedad", "zona", "mensaje"];
 const MAX_MENSAJE = 200;
@@ -88,6 +89,8 @@ function validarAlerta(data) {
 
   const zona = limpiar(data.zona).toLowerCase();
   if (!ZONAS_VALIDAS.includes(zona)) return { error: `Zona invalida. Opciones: ${ZONAS_VALIDAS.join(", ")}` };
+  const tipo = limpiar(data.tipo).toLowerCase();
+  if (!TIPOS_VALIDOS.includes(tipo)) return { error: `Tipo de alerta invalido. Opciones: ${TIPOS_VALIDOS.join(", ")}` };
 
   let gravedad = limpiar(data.gravedad).toLowerCase();
   gravedad = ALIAS_GRAVEDAD.get(gravedad) || gravedad;
@@ -96,7 +99,7 @@ function validarAlerta(data) {
   const mensaje = limpiar(data.mensaje);
   if (mensaje.length > MAX_MENSAJE) return { error: `El mensaje supera ${MAX_MENSAJE} caracteres` };
 
-  return { alerta: { tipo: limpiar(data.tipo).toLowerCase(), gravedad, zona, mensaje } };
+  return { alerta: { tipo, gravedad, zona, mensaje } };
 }
 
 function contarClientes(zona) {
@@ -144,8 +147,8 @@ io.on("connection", (socket) => {
       return;
     }
 
-    difundirAlerta(alerta);
-    responder({ ok: true });
+    const destinatarios = difundirAlerta(alerta);
+    responder({ ok: true, zona: alerta.zona, destinatarios, no_entregados: 0 });
   });
 
   socket.on("disconnect", () => {
