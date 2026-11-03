@@ -14,7 +14,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { SERVER_HOST, STACK_PORTS } from "../config/env";
+import { DEFAULT_STACK, SERVER_HOST, STACK_PORTS } from "../config/env";
 import type { Stack } from "../config/env";
 import { COLORS, RADIUS, SPACING } from "../config/theme";
 import { ZONES } from "../types/zones";
@@ -77,7 +77,7 @@ const ms = (v: number | null) => (v === null ? "–" : `${v} ms`);
 
 export default function SuperuserScreen({ onBack }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("emitir");
-  const [stack, setStack] = useState<Stack>("node");
+  const [stack, setStack] = useState<Stack>(DEFAULT_STACK);
   const [tipo, setTipo] = useState<string>("");
   const [gravedad, setGravedad] = useState<AlertSeverity>("alta");
   const [zona, setZona] = useState<Zone>("norte");

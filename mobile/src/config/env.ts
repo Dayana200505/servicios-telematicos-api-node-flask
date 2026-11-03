@@ -16,8 +16,12 @@ export const SERVER_HOST = "192.168.100.45";
 //
 // Descomenta el que quieras usar por defecto para la app del usuario final:
 
-export const SERVER_PORT = 3001; // Node.js
-// export const SERVER_PORT = 5000; // Flask
+//export const SERVER_PORT = 3001; // Node.js
+export const SERVER_PORT = 5000; // Flask
+
+// Backend predeterminado del panel: debe coincidir con SERVER_PORT.
+export type Stack = "node" | "flask";
+export const DEFAULT_STACK: Stack = SERVER_PORT === 5000 ? "flask" : "node";
 
 // URL completa del servidor (para el usuario final)
 export const SERVER_URL = `http://${SERVER_HOST}:${SERVER_PORT}`;
@@ -46,8 +50,6 @@ export const EVENTS = {
 // ============================================================
 // Panel de superusuario (Sprint 4)
 // ============================================================
-
-export type Stack = "node" | "flask";
 
 // Puertos de cada servidor para que el superusuario pueda elegir a cuál emitir.
 export const STACK_PORTS: Record<Stack, number> = {
