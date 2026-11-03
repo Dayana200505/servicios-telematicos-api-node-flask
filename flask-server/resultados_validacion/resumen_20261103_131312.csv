@@ -1,0 +1,15 @@
+﻿servidor,prueba,descripcion,repeticiones,pasan,consistencia
+node,http_raiz,El servidor responde en la ruta raiz,3,3,CONSISTENTE
+node,http_historial,El historial de alertas responde,3,3,CONSISTENTE
+node,rooms,Suscripcion por zonas y cambio de zona,3,3,CONSISTENTE
+node,difusion,"Emision, validacion y difusion segmentada",3,3,CONSISTENTE
+node,validacion,Validacion de datos y manejo de errores,3,3,CONSISTENTE
+node,cambio_zona,Cambio de zona sin reconectar,3,3,CONSISTENTE
+node,reconexion,"Desconexion, reconexion y recuperacion de alertas",3,3,CONSISTENTE
+flask,http_raiz,El servidor responde en la ruta raiz,3,3,CONSISTENTE
+flask,http_historial,El historial de alertas responde,3,3,CONSISTENTE
+flask,rooms,Suscripcion por zonas y cambio de zona,3,3,CONSISTENTE
+flask,difusion,"Emision, validacion y difusion segmentada",3,3,CONSISTENTE
+flask,validacion,Validacion de datos y manejo de errores,3,3,CONSISTENTE
+flask,cambio_zona,Cambio de zona sin reconectar,3,3,CONSISTENTE
+flask,reconexion,"Desconexion, reconexion y recuperacion de alertas",3,3,CONSISTENTE

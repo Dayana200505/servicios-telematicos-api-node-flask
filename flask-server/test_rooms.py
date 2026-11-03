@@ -51,7 +51,7 @@ print("OK: alerta segmentada por zona")
 # Cambio de zona sin reconectar: s1 pasa a norte.
 c3.emit(SUBSCRIBE_ZONE, {"zona": "norte"})
 time.sleep(0.5)
-c1.emit(EMIT_ALERT, {"tipo": "inundacion", "gravedad": "media", "zona": "norte", "mensaje": "Inundacion en zona norte"})
+c1.emit(EMIT_ALERT, {"tipo": "inundación", "gravedad": "media", "zona": "norte", "mensaje": "Inundacion en zona norte"})
 time.sleep(0.5)
 assert len(recibidos["s1"]) == 1, "s1 no recibio la alerta tras cambiar a norte"
 print("OK: cambio de zona sin reconectar")
