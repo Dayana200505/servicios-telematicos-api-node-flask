@@ -12,16 +12,16 @@ const alertasBase = [
     mensaje: "Incendio de prueba en la zona centro",
   },
   {
-    tipo: "inundacion",
+    tipo: "inundación",
     gravedad: "media",
     zona: "norte",
     mensaje: "Inundacion de prueba en la zona norte",
   },
   {
-    tipo: "temblor",
+    tipo: "sismo",
     gravedad: "baja",
     zona: "sur",
-    mensaje: "Temblor de prueba en la zona sur",
+    mensaje: "Sismo de prueba en la zona sur",
   },
 ];
 

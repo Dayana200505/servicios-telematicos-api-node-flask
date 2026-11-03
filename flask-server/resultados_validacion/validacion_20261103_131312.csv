@@ -1,0 +1,43 @@
+﻿fecha_hora,repeticion,servidor,prueba,descripcion,resultado,duracion_s,detalle
+2026-11-03T13:13:14,1,node,http_raiz,El servidor responde en la ruta raiz,PASA,2.16,"HTTP 200, status=OK"
+2026-11-03T13:13:16,1,node,http_historial,El historial de alertas responde,PASA,2.08,"HTTP 200, status=ok"
+2026-11-03T13:13:26,1,node,rooms,Suscripcion por zonas y cambio de zona,PASA,9.74,Todas las verificaciones pasaron en http://localhost:3001
+2026-11-03T13:13:41,1,node,difusion,"Emision, validacion y difusion segmentada",PASA,14.79,Todas las verificaciones de difusion pasaron en http://localhost:3001
+2026-11-03T13:13:48,1,node,validacion,Validacion de datos y manejo de errores,PASA,7.14,"[OK] No es un objeto: La alerta debe enviarse con tipo, gravedad, zona y mensaje"
+2026-11-03T13:14:06,1,node,cambio_zona,Cambio de zona sin reconectar,PASA,18.02,Todas las verificaciones de cambio de zona pasaron en http://localhost:3001
+2026-11-03T13:14:14,1,node,reconexion,"Desconexion, reconexion y recuperacion de alertas",PASA,8.49,Todas las verificaciones de reconexion pasaron en http://localhost:3001
+2026-11-03T13:14:16,1,flask,http_raiz,El servidor responde en la ruta raiz,PASA,2.13,"HTTP 200, status=ok"
+2026-11-03T13:14:18,1,flask,http_historial,El historial de alertas responde,PASA,2.06,"HTTP 200, status=ok"
+2026-11-03T13:14:28,1,flask,rooms,Suscripcion por zonas y cambio de zona,PASA,9.31,Todas las verificaciones pasaron en http://localhost:5000
+2026-11-03T13:14:43,1,flask,difusion,"Emision, validacion y difusion segmentada",PASA,14.92,Todas las verificaciones de difusion pasaron en http://localhost:5000
+2026-11-03T13:14:50,1,flask,validacion,Validacion de datos y manejo de errores,PASA,7.09,"[OK] No es un objeto: La alerta debe enviarse con tipo, gravedad, zona y mensaje"
+2026-11-03T13:15:08,1,flask,cambio_zona,Cambio de zona sin reconectar,PASA,18.11,Todas las verificaciones de cambio de zona pasaron en http://localhost:5000
+2026-11-03T13:15:16,1,flask,reconexion,"Desconexion, reconexion y recuperacion de alertas",PASA,8.48,Todas las verificaciones de reconexion pasaron en http://localhost:5000
+2026-11-03T13:15:18,2,node,http_raiz,El servidor responde en la ruta raiz,PASA,2.09,"HTTP 200, status=OK"
+2026-11-03T13:15:21,2,node,http_historial,El historial de alertas responde,PASA,2.04,"HTTP 200, status=ok"
+2026-11-03T13:15:30,2,node,rooms,Suscripcion por zonas y cambio de zona,PASA,9.38,Todas las verificaciones pasaron en http://localhost:3001
+2026-11-03T13:15:45,2,node,difusion,"Emision, validacion y difusion segmentada",PASA,14.82,Todas las verificaciones de difusion pasaron en http://localhost:3001
+2026-11-03T13:15:52,2,node,validacion,Validacion de datos y manejo de errores,PASA,7.11,"[OK] No es un objeto: La alerta debe enviarse con tipo, gravedad, zona y mensaje"
+2026-11-03T13:16:10,2,node,cambio_zona,Cambio de zona sin reconectar,PASA,17.95,Todas las verificaciones de cambio de zona pasaron en http://localhost:3001
+2026-11-03T13:16:18,2,node,reconexion,"Desconexion, reconexion y recuperacion de alertas",PASA,8.37,Todas las verificaciones de reconexion pasaron en http://localhost:3001
+2026-11-03T13:16:20,2,flask,http_raiz,El servidor responde en la ruta raiz,PASA,2.02,"HTTP 200, status=ok"
+2026-11-03T13:16:22,2,flask,http_historial,El historial de alertas responde,PASA,2.04,"HTTP 200, status=ok"
+2026-11-03T13:16:31,2,flask,rooms,Suscripcion por zonas y cambio de zona,PASA,9.2,Todas las verificaciones pasaron en http://localhost:5000
+2026-11-03T13:16:46,2,flask,difusion,"Emision, validacion y difusion segmentada",PASA,14.8,Todas las verificaciones de difusion pasaron en http://localhost:5000
+2026-11-03T13:16:53,2,flask,validacion,Validacion de datos y manejo de errores,PASA,7.11,"[OK] No es un objeto: La alerta debe enviarse con tipo, gravedad, zona y mensaje"
+2026-11-03T13:17:12,2,flask,cambio_zona,Cambio de zona sin reconectar,PASA,18.24,Todas las verificaciones de cambio de zona pasaron en http://localhost:5000
+2026-11-03T13:17:20,2,flask,reconexion,"Desconexion, reconexion y recuperacion de alertas",PASA,8.41,Todas las verificaciones de reconexion pasaron en http://localhost:5000
+2026-11-03T13:17:22,3,node,http_raiz,El servidor responde en la ruta raiz,PASA,2.04,"HTTP 200, status=OK"
+2026-11-03T13:17:24,3,node,http_historial,El historial de alertas responde,PASA,2.04,"HTTP 200, status=ok"
+2026-11-03T13:17:33,3,node,rooms,Suscripcion por zonas y cambio de zona,PASA,9.28,Todas las verificaciones pasaron en http://localhost:3001
+2026-11-03T13:17:48,3,node,difusion,"Emision, validacion y difusion segmentada",PASA,14.82,Todas las verificaciones de difusion pasaron en http://localhost:3001
+2026-11-03T13:17:55,3,node,validacion,Validacion de datos y manejo de errores,PASA,7.14,"[OK] No es un objeto: La alerta debe enviarse con tipo, gravedad, zona y mensaje"
+2026-11-03T13:18:13,3,node,cambio_zona,Cambio de zona sin reconectar,PASA,18.07,Todas las verificaciones de cambio de zona pasaron en http://localhost:3001
+2026-11-03T13:18:22,3,node,reconexion,"Desconexion, reconexion y recuperacion de alertas",PASA,8.47,Todas las verificaciones de reconexion pasaron en http://localhost:3001
+2026-11-03T13:18:24,3,flask,http_raiz,El servidor responde en la ruta raiz,PASA,2.04,"HTTP 200, status=ok"
+2026-11-03T13:18:26,3,flask,http_historial,El historial de alertas responde,PASA,2.04,"HTTP 200, status=ok"
+2026-11-03T13:18:35,3,flask,rooms,Suscripcion por zonas y cambio de zona,PASA,9.39,Todas las verificaciones pasaron en http://localhost:5000
+2026-11-03T13:18:50,3,flask,difusion,"Emision, validacion y difusion segmentada",PASA,14.89,Todas las verificaciones de difusion pasaron en http://localhost:5000
+2026-11-03T13:18:57,3,flask,validacion,Validacion de datos y manejo de errores,PASA,7.13,"[OK] No es un objeto: La alerta debe enviarse con tipo, gravedad, zona y mensaje"
+2026-11-03T13:19:16,3,flask,cambio_zona,Cambio de zona sin reconectar,PASA,18.16,Todas las verificaciones de cambio de zona pasaron en http://localhost:5000
+2026-11-03T13:19:24,3,flask,reconexion,"Desconexion, reconexion y recuperacion de alertas",PASA,8.49,Todas las verificaciones de reconexion pasaron en http://localhost:5000
