@@ -19,6 +19,8 @@ EVT_ALERT_RECEIVED = "alerta_recibida"
 EVT_ZONE_CONFIRMED = "zona_confirmada"
 EVT_ZONE_ERROR = "error_zona"
 EVT_ALERT_ERROR = "error_alerta"
+EVT_LOST_ALERTS = "alertas_perdidas"
+MAX_RECUPERADAS = 100
 
 ZONAS_VALIDAS = ["norte", "centro", "sur"]
 GRAVEDADES_VALIDAS = ["baja", "media", "alta"]
@@ -72,6 +74,28 @@ def normalizar_zona(data):
     valor = data if isinstance(data, str) else (data or {}).get("zona")
     return str(valor or "").strip().lower()
 
+def parsear_ultimo_id(data):
+    if not isinstance(data, dict):
+        return None
+    try:
+        valor = int(data.get("ultimo_id"))
+    except (TypeError, ValueError):
+        return None
+    return valor if valor >= 0 else None
+
+def alertas_desde(zona, ultimo_id):
+    conn = sqlite3.connect(str(DATABASE_PATH), timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        filas = conn.execute(
+            "SELECT id, tipo, gravedad, zona, mensaje, emitida_en, fecha_hora FROM alertas "
+            "WHERE zona = ? AND id > ? ORDER BY id ASC LIMIT ?",
+            (zona, ultimo_id, MAX_RECUPERADAS),
+        ).fetchall()
+        return [dict(fila) for fila in filas]
+    finally:
+        conn.close()
+
 def asignar_zona(data):
     nueva = normalizar_zona(data)
     if nueva not in ZONAS_VALIDAS:
@@ -83,6 +107,9 @@ def asignar_zona(data):
     join_room(nueva)
     zona_por_cliente[request.sid] = nueva
     emit(EVT_ZONE_CONFIRMED, {"zona": nueva})
+    ultimo_id = parsear_ultimo_id(data)
+    if ultimo_id is not None:
+        emit(EVT_LOST_ALERTS, {"zona": nueva, "alertas": alertas_desde(nueva, ultimo_id)})
     print(f"Cliente {request.sid} -> room {nueva}")
 
 @socketio.on("connect")
@@ -135,10 +162,11 @@ def registrar_alerta(alerta):
     conn = sqlite3.connect(str(DATABASE_PATH), timeout=10)
     try:
         with conn:
-            conn.execute(
+             cursor = conn.execute(
                 "INSERT INTO alertas (tipo, gravedad, zona, mensaje, emitida_en, fecha_hora) VALUES (?, ?, ?, ?, ?, ?)",
                 (alerta["tipo"], alerta["gravedad"], alerta["zona"], alerta["mensaje"], alerta["emitida_en"], fecha_hora),
             )
+             alerta["id"] = cursor.lastrowid
     finally:
         conn.close()
     alerta["fecha_hora"] = fecha_hora
