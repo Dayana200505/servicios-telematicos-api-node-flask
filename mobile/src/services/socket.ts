@@ -75,9 +75,7 @@ class SocketService {
 
     // Recordar el id de la última alerta recibida (en vivo o recuperada).
     socket.on(EVENTS.ALERT_RECEIVED, (alerta: AlertaConId) => {
-      if (typeof alerta?.id === "number" && (this.lastAlertId === null || alerta.id > this.lastAlertId)) {
-        this.lastAlertId = alerta.id;
-      }
+      this.recordAlertId(alerta);
     });
 
     // Alertas emitidas mientras estuvo desconectado: se entregan a los mismos
@@ -86,6 +84,7 @@ class SocketService {
       const alertas = payload?.alertas ?? [];
       log(`[Socket] Recuperadas ${alertas.length} alertas perdidas de ${payload?.zona}`);
       alertas.forEach((alerta) => {
+        this.recordAlertId(alerta);
         socket.listeners(EVENTS.ALERT_RECEIVED).forEach((handler) => handler(alerta));
       });
     });
@@ -233,6 +232,12 @@ class SocketService {
         console.warn("[Socket] Error en un listener:", e);
       }
     });
+  }
+
+  private recordAlertId(alerta: AlertaConId) {
+    if (typeof alerta?.id === "number" && (this.lastAlertId === null || alerta.id > this.lastAlertId)) {
+      this.lastAlertId = alerta.id;
+    }
   }
 
   private clearReconnectTimer() {

@@ -1,0 +1,8 @@
+﻿servidor,prueba,descripcion,repeticiones,pasan,consistencia
+flask,http_raiz,El servidor responde en la ruta raiz,1,1,CONSISTENTE
+flask,http_historial,El historial de alertas responde,1,1,CONSISTENTE
+flask,rooms,Suscripcion por zonas y cambio de zona,1,1,CONSISTENTE
+flask,difusion,"Emision, validacion y difusion segmentada",1,1,CONSISTENTE
+flask,validacion,Validacion de datos y manejo de errores,1,1,CONSISTENTE
+flask,cambio_zona,Cambio de zona sin reconectar,1,1,CONSISTENTE
+flask,reconexion,"Desconexion, reconexion y recuperacion de alertas",1,1,CONSISTENTE

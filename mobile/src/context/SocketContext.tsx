@@ -40,10 +40,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = socketService.onConnectionChange((connected) => {
       setIsConnected(connected);
       setSocketId(socket.id ?? null);
-      if (!connected) {
-        // Al desconectar, perdemos la zona asignada
-        setCurrentZone(null);
-      }
+      // La zona se conserva mientras Socket.IO reintenta. El servicio vuelve a
+      // suscribirla al conectar y solicita las alertas posteriores al último id.
     });
 
     const onConnect = () => setSocketId(socket.id ?? null);
@@ -80,10 +78,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       }
       // -------------------------------------------
 
-      setAlerts((current) => [
-        { ...data, emitida_en: data.emitida_en ?? Date.now() },
-        ...current,
-      ].slice(0, 50));
+      setAlerts((current) => {
+        const nueva = { ...data, emitida_en: data.emitida_en ?? Date.now() };
+        if (typeof data.id === "number" && current.some((alerta) => alerta.id === data.id)) {
+          return current;
+        }
+        return [nueva, ...current].slice(0, 50);
+      });
     };
 
     socket.on("connect", onConnect);

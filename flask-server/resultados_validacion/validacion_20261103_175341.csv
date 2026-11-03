@@ -1,0 +1,8 @@
+﻿fecha_hora,repeticion,servidor,prueba,descripcion,resultado,duracion_s,detalle
+2026-11-03T17:53:43,1,node,http_raiz,El servidor responde en la ruta raiz,PASA,2.16,"HTTP 200, status=OK"
+2026-11-03T17:53:45,1,node,http_historial,El historial de alertas responde,PASA,2.05,"HTTP 200, status=ok"
+2026-11-03T17:53:54,1,node,rooms,Suscripcion por zonas y cambio de zona,PASA,9.57,Todas las verificaciones pasaron en http://localhost:3001
+2026-11-03T17:54:09,1,node,difusion,"Emision, validacion y difusion segmentada",PASA,14.34,Todas las verificaciones de difusion pasaron en http://localhost:3001
+2026-11-03T17:54:15,1,node,validacion,Validacion de datos y manejo de errores,PASA,6.51,"[OK] No es un objeto: La alerta debe enviarse con tipo, gravedad, zona y mensaje"
+2026-11-03T17:54:33,1,node,cambio_zona,Cambio de zona sin reconectar,PASA,17.37,Todas las verificaciones de cambio de zona pasaron en http://localhost:3001
+2026-11-03T17:54:40,1,node,reconexion,"Desconexion, reconexion y recuperacion de alertas",PASA,7.79,Todas las verificaciones de reconexion pasaron en http://localhost:3001

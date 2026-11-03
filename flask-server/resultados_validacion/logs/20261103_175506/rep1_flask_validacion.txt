@@ -1,0 +1,11 @@
+Validacion de datos y manejo de errores
+Resultado: PASA
+
+[OK] Alerta valida: aceptada
+[OK] Gravedad con alias 'alta': aceptada
+[OK] Falta el mensaje: Faltan campos obligatorios: mensaje
+[OK] Tipo vacio: Faltan campos obligatorios: tipo
+[OK] Zona invalida: Zona invalida. Opciones: norte, centro, sur
+[OK] Gravedad invalida: Gravedad invalida. Opciones: baja, media, alta
+[OK] Mensaje demasiado largo: El mensaje supera 200 caracteres
+[OK] No es un objeto: La alerta debe enviarse con tipo, gravedad, zona y mensaje

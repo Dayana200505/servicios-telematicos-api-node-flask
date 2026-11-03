@@ -1,5 +1,9 @@
 # Alertas comunitarias de emergencia
 
+## Estado de actividades
+
+La matriz de actividades, la implementación por backend y las evidencias de pruebas están consolidadas en [ACTIVIDADES_IMPLEMENTADAS.md](./ACTIVIDADES_IMPLEMENTADAS.md).
+
 ## Descripción
 
 Aplicación móvil para seleccionar manualmente una zona —Norte, Centro o Sur— y recibir alertas comunitarias de emergencia en tiempo real.

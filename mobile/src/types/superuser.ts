@@ -49,12 +49,15 @@ export interface LoadTestResult {
   suscritos: number;
   fallidos: number;
   objetivo: number;
+  conectados_destino: number;
+  suscritos_destino: number;
   recibieron: number;
   no_recibieron: number;
   sin_conexion: number;
   sin_recepcion: number;
   fuera_de_zona: number;
   entrega_pct: number;
+  entrega_pct_conectados: number;
   latencia: {
     min: number | null;
     prom: number | null;

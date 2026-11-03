@@ -1,0 +1,8 @@
+Emision, validacion y difusion segmentada
+Resultado: PASA
+
+OK: los 4 clientes entraron a su room
+OK: cada alerta llego solo a los clientes de su zona
+OK: las alertas invalidas se rechazan y no se difunden
+OK: la alerta se normaliza y sigue llegando solo a su zona
+Todas las verificaciones de difusion pasaron en http://localhost:3001

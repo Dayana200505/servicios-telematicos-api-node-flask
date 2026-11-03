@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -14,7 +14,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { SERVER_HOST, STACK_PORTS } from "../config/env";
+import { DEFAULT_STACK, SERVER_HOST, STACK_PORTS } from "../config/env";
 import type { Stack } from "../config/env";
 import { COLORS, RADIUS, SPACING } from "../config/theme";
 import { ZONES } from "../types/zones";
@@ -77,7 +77,7 @@ const ms = (v: number | null) => (v === null ? "–" : `${v} ms`);
 
 export default function SuperuserScreen({ onBack }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("emitir");
-  const [stack, setStack] = useState<Stack>("node");
+  const [stack, setStack] = useState<Stack>(DEFAULT_STACK);
   const [tipo, setTipo] = useState<string>("");
   const [gravedad, setGravedad] = useState<AlertSeverity>("alta");
   const [zona, setZona] = useState<Zone>("norte");
@@ -85,7 +85,7 @@ export default function SuperuserScreen({ onBack }: Props) {
   const [errors, setErrors] = useState<Errors>({});
   const [banner, setBanner] = useState<Banner>(null);
   const [sending, setSending] = useState(false);
-  const [log, setLog] = useState<LogEntry[]>([]);
+  const [, setLog] = useState<LogEntry[]>([]);
   
   // Estados para el historial
   const [historialReal, setHistorialReal] = useState<any[]>([]);
@@ -100,16 +100,16 @@ export default function SuperuserScreen({ onBack }: Props) {
   const load = useLoadTest();
 
   // Cargar historial
-  const cargarHistorial = async () => {
+  const cargarHistorial = useCallback(async () => {
     const data = await fetchHistory();
     setHistorialReal(data);
-  };
+  }, [fetchHistory]);
 
   useEffect(() => {
-    if (activeTab === "alertas") {
-      cargarHistorial();
-    }
-  }, [activeTab, stack]);
+    if (activeTab !== "alertas") return;
+    const timer = setTimeout(() => { void cargarHistorial(); }, 0);
+    return () => clearTimeout(timer);
+  }, [activeTab, stack, cargarHistorial]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -121,10 +121,6 @@ export default function SuperuserScreen({ onBack }: Props) {
   const historialFiltrado = historialReal.filter(
     (item) => filtroZona === null || item.zona === filtroZona
   );
-
-  const gravedadInfo = GRAVEDADES.find((g) => g.value === gravedad) ?? GRAVEDADES[2];
-  const zonaInfo = ZONES.find((z) => z.id === zona) ?? ZONES[0];
-  const tipoInfo = TIPOS.find((t) => t.value === tipo);
 
   const draft: AlertDraft = useMemo(
     () => ({ tipo, gravedad, zona, mensaje: mensaje.trim() }),
@@ -534,11 +530,15 @@ export default function SuperuserScreen({ onBack }: Props) {
                     </Text>
                   </View>
                   <View style={styles.statsGrid}>
-                    <Stat label="Conectados" value={String(result.suscritos)} />
+                    <Stat label="Objetivo" value={String(result.objetivo)} />
+                    <Stat label="Conectados destino" value={String(result.conectados_destino)} />
                     <Stat label="Recibieron" value={String(result.recibieron)} tone="good" />
                     <Stat label="No recibieron" value={String(result.no_recibieron)} tone="bad" />
                     <Stat label="Sin conexión" value={String(result.sin_conexion)} tone="bad" />
                   </View>
+                  <Text style={styles.deliveryNote}>
+                    Entrega: {result.entrega_pct}% del objetivo · {result.entrega_pct_conectados}% de los conectados de la zona
+                  </Text>
                   <View style={styles.latRow}>
                     <Lat label="Prom." value={ms(result.latencia.prom)} />
                     <Lat label="P95" value={ms(result.latencia.p95)} />
@@ -715,6 +715,7 @@ const styles = StyleSheet.create({
   latRow: { flexDirection: "row", gap: 8, marginBottom: SPACING.md },
   lat: { flex: 1, backgroundColor: COLORS.white, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.border, padding: 8 },
   latValue: { fontSize: 13, fontWeight: "700", color: COLORS.text },
+  deliveryNote: { color: COLORS.textLight, fontSize: 12, lineHeight: 18, marginTop: 10 },
 
   footer: { alignItems: "center", paddingTop: SPACING.lg },
   footerText: { fontSize: 11, color: COLORS.grayLight, lineHeight: 16 },
