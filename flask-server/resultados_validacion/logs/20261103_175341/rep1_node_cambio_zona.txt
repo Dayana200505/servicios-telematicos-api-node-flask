@@ -1,0 +1,8 @@
+Cambio de zona sin reconectar
+Resultado: PASA
+
+OK: tras cada cambio el cliente recibe solo la alerta de su zona actual
+OK: una zona invalida no cambia la suscripcion actual
+OK: repetir la misma zona no duplica alertas
+OK: el cliente mantuvo la misma conexion (8zwHDx7YReGdAZt5AAAJ) en todos los cambios
+Todas las verificaciones de cambio de zona pasaron en http://localhost:3001

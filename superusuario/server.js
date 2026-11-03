@@ -13,6 +13,7 @@ const PORT = 4000;
 
 // Genera un ID único para cada prueba
 let testId = 1;
+let pruebaEnCurso = false;
 
 app.get("/", (req, res) => {
   res.json({ status: "ok", service: "load-test-panel" });
@@ -22,7 +23,22 @@ ioServer.on("connection", (socket) => {
   console.log(`[Panel] Cliente conectado: ${socket.id}`);
 
   socket.on("prueba:iniciar", async (config, callback) => {
-    const { url, stack, usuarios, distribucion, alerta } = config;
+    if (pruebaEnCurso) {
+      const error = "Ya hay una prueba de carga en curso.";
+      if (callback) callback({ ok: false, error });
+      return;
+    }
+    const { url, stack, usuarios, distribucion, alerta } = config || {};
+
+    if (!/^https?:\/\//.test(url) || !["node", "flask"].includes(stack) ||
+        ![50, 100, 500, 1000].includes(Number(usuarios)) ||
+        !["destino", "repartido"].includes(distribucion) || !alerta) {
+      const error = "Configuración de prueba inválida. Usa 50, 100, 500 o 1000 usuarios y una distribución permitida.";
+      if (callback) callback({ ok: false, error });
+      return;
+    }
+
+    pruebaEnCurso = true;
 
     console.log(`\n[Panel] Iniciando prueba: ${usuarios} usuarios en ${stack} (${url})`);
 
@@ -144,7 +160,7 @@ ioServer.on("connection", (socket) => {
       const objetivo = simulados[alerta.zona];
       const conectadosDestino = conectados[alerta.zona];
       const suscritosDestino = suscritos[alerta.zona];
-      const sinConexionDestino = objetivo - conectadosDestino;
+      const sinConexionDestino = Math.max(0, objetivo - conectadosDestino);
       
       // Calcular métricas
       latencias.sort((a, b) => a - b);
@@ -174,11 +190,12 @@ ioServer.on("connection", (socket) => {
         fallidos,
         objetivo,
         recibieron: totalRecibieron,
-        no_recibieron: objetivo - totalRecibieron,
+        no_recibieron: Math.max(0, objetivo - totalRecibieron),
         sin_conexion: sinConexionDestino,
-        sin_recepcion: suscritosDestino - totalRecibieron,
+        sin_recepcion: Math.max(0, suscritosDestino - totalRecibieron),
         fuera_de_zona: fueraDeZona,
-        entrega_pct: totalConectados > 0 ? Math.round((totalRecibieron / totalConectados) * 100) : 0,
+        entrega_pct: objetivo > 0 ? Math.round((totalRecibieron / objetivo) * 100) : 0,
+        entrega_pct_conectados: conectadosDestino > 0 ? Math.round((totalRecibieron / conectadosDestino) * 100) : 0,
         latencia: { min, prom, p95, p99: p95, max },
         ms_total: 2000, // Aproximado, podrías medir el tiempo exacto
         por_zona: porZona,
@@ -198,6 +215,8 @@ ioServer.on("connection", (socket) => {
       console.error("[Panel] Error en la prueba:", error);
       socket.emit("prueba:resultado", { ok: false, error: error.message });
       if (callback) callback({ ok: false, error: error.message });
+    } finally {
+      pruebaEnCurso = false;
     }
   });
 });

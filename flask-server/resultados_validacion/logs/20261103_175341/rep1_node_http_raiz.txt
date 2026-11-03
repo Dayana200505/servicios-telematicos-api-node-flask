@@ -1,0 +1,4 @@
+El servidor responde en la ruta raiz
+Resultado: PASA
+
+HTTP 200, status=OK

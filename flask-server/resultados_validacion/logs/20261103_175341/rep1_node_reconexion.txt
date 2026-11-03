@@ -1,0 +1,9 @@
+Desconexion, reconexion y recuperacion de alertas
+Resultado: PASA
+
+OK: el cliente recibio la alerta 1 (id 8263)
+OK: el cliente se desconecto
+OK: se emitieron las alertas 2 y 4 (norte) y la 3 (sur) con el cliente desconectado
+OK: recupero las alertas 2 y 4, en orden, sin la 1 ni la de otra zona
+OK: tras reconectar, las alertas nuevas llegan en vivo y sin repetirse
+Todas las verificaciones de reconexion pasaron en http://localhost:3001

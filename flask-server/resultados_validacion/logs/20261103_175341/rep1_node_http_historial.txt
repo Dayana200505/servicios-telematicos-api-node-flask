@@ -1,0 +1,4 @@
+El historial de alertas responde
+Resultado: PASA
+
+HTTP 200, status=ok

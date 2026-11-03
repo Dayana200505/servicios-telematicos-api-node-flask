@@ -1,0 +1,7 @@
+Suscripcion por zonas y cambio de zona
+Resultado: PASA
+
+OK: cada cliente entro a su room
+OK: alerta segmentada por zona
+OK: cambio de zona sin reconectar
+Todas las verificaciones pasaron en http://localhost:5000

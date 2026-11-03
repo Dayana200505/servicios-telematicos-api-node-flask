@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -44,11 +44,11 @@ const getSeverityColor = (gravedad: string) => {
 };
 
 // Campana que vibra visualmente al recibir una alerta
-function AlertBell({ connected, hasNewAlert }: { connected: boolean; hasNewAlert: boolean }) {
-  const shake = useRef(new Animated.Value(0)).current;
+function AlertBell({ connected, alertSignal }: { connected: boolean; alertSignal?: number }) {
+  const [shake] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
-    if (hasNewAlert) {
+    if (alertSignal !== undefined) {
       Animated.sequence([
         Animated.timing(shake, { toValue: 1, duration: 80, useNativeDriver: true }),
         Animated.timing(shake, { toValue: -1, duration: 80, useNativeDriver: true }),
@@ -57,7 +57,7 @@ function AlertBell({ connected, hasNewAlert }: { connected: boolean; hasNewAlert
         Animated.timing(shake, { toValue: 0, duration: 80, useNativeDriver: true }),
       ]).start();
     }
-  }, [hasNewAlert, shake]);
+  }, [alertSignal, shake]);
 
   const rotate = shake.interpolate({
     inputRange: [-1, 1],
@@ -90,18 +90,9 @@ function AlertBell({ connected, hasNewAlert }: { connected: boolean; hasNewAlert
 export default function ConnectionStatusScreen({ onManageZones, onOpenAdmin }: Props) {
   const { isConnected, socketId, currentZone, alerts } = useSocket();
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [hasNewAlert, setHasNewAlert] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Solo animamos la campana cuando llega una alerta (la vibración está en el Contexto)
-  useEffect(() => {
-    if (alerts.length > 0) {
-      setHasNewAlert(true);
-      const timer = setTimeout(() => setHasNewAlert(false), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [alerts.length]);
-
   // Función de Pull to Refresh
   const onRefresh = () => {
     setRefreshing(true);
@@ -123,7 +114,10 @@ export default function ConnectionStatusScreen({ onManageZones, onOpenAdmin }: P
 
       {/* HEADER */}
       <View style={styles.header}>
-        <AlertBell connected={isConnected} hasNewAlert={hasNewAlert} />
+        <AlertBell
+          connected={isConnected}
+          alertSignal={alerts[0]?.id ?? (alerts.length > 0 ? alerts.length : undefined)}
+        />
         <Text style={styles.headerTitle}>Alertas Comunitarias</Text>
         <Text style={styles.headerSubtitle}>Emergencias en tiempo real</Text>
       </View>
